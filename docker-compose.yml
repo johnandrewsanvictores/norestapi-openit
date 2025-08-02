@@ -1,0 +1,29 @@
+services:
+  my-app-client:
+    build: ./client
+    container_name: boiler-client
+    ports:
+      - '5173:5173'
+    env_file:
+      - ./client/.env
+    volumes:
+      - /app/node_modules
+      - ./client:/app
+    networks:
+      - boiler-net
+
+  my-app-server:
+    build: ./server
+    container_name: boiler-server
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    env_file:
+      - ./server/.env
+    networks:
+      - boiler-net
+
+networks:
+  boiler-net:
