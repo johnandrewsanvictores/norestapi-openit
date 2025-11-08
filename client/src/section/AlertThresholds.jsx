@@ -1,9 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const AlertThresholds = () => {
   const [minMagnitude, setMinMagnitude] = useState('3.0');
   const [alertRadius, setAlertRadius] = useState('100');
   const [location, setLocation] = useState('San Francisco, CA');
+
+  // Load settings from localStorage on mount
+  useEffect(() => {
+    try {
+      const settings = localStorage.getItem('alertSettings');
+      if (settings) {
+        const parsed = JSON.parse(settings);
+        setMinMagnitude(parsed.minMagnitude?.toString() || '3.0');
+        setAlertRadius(parsed.alertRadius?.toString() || '100');
+      }
+    } catch (error) {
+      console.error('Error loading alert settings:', error);
+    }
+  }, []);
 
   const locations = [
     'San Francisco, CA',
@@ -19,11 +33,20 @@ const AlertThresholds = () => {
   ];
 
   const handleSave = () => {
-    console.log('Alert thresholds saved:', {
-      minMagnitude,
-      alertRadius,
-      location
-    });
+    const settings = {
+      minMagnitude: parseFloat(minMagnitude) || 3.0,
+      alertRadius: parseFloat(alertRadius) || 100,
+      location: location
+    };
+    
+    try {
+      localStorage.setItem('alertSettings', JSON.stringify(settings));
+      console.log('Alert thresholds saved:', settings);
+      alert('Alert settings saved successfully!');
+    } catch (error) {
+      console.error('Error saving alert settings:', error);
+      alert('Error saving settings. Please try again.');
+    }
   };
 
   return (

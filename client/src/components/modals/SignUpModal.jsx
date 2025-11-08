@@ -83,7 +83,6 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToSignIn, onLocationPermissionRe
       resetForm();
       onClose();
       
-      // Show location permission modal instead of navigating directly
       if (onLocationPermissionRequest) {
         onLocationPermissionRequest();
       } else {
@@ -118,7 +117,6 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToSignIn, onLocationPermissionRe
           ×
         </button>
 
-        {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-8 h-8 flex items-center justify-center">
@@ -131,7 +129,6 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToSignIn, onLocationPermissionRe
           <p className="text-gray-400 text-sm ml-11">Real-time earthquake monitoring</p>
         </div>
 
-        {/* Form */}
         <div className="mb-4">
           <h3 className="text-xl font-bold text-white mb-2">Create Account</h3>
           <p className="text-gray-400 text-sm mb-5">Join us to receive real-time earthquake alerts</p>
@@ -221,7 +218,6 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToSignIn, onLocationPermissionRe
           </form>
         </div>
 
-        {/* Navigation Link */}
         <div className="text-center mb-4">
           <p className="text-gray-400 text-sm">
             Already have an account?{" "}
@@ -234,7 +230,6 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToSignIn, onLocationPermissionRe
           </p>
         </div>
 
-        {/* Disclaimer */}
         <p className="text-gray-500 text-xs text-center">
           By creating an account, you agree to our Terms of Service and Privacy Policy
         </p>
