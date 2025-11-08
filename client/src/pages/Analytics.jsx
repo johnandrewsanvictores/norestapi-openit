@@ -1,18 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import DashboardSidebar from '../section/DashboardSidebar';
-import AnalyticsFilters from '../section/AnalyticsFilters';
-import AnalyticsMetrics from '../section/AnalyticsMetrics';
-import SeismicActivityTimeline from '../section/SeismicActivityTimeline';
-import NotificationDropdown from '../components/NotificationDropdown';
-import EarthquakeDetailsModal from '../components/modals/EarthquakeDetailsModal';
-import EarthquakeAlertModal from '../components/modals/EarthquakeAlertModal';
-import { useEarthquakeAlert } from '../context/EarthquakeAlertContext';
-import { useEarthquakeMonitor } from '../hooks/useEarthquakeMonitor';
-import { shouldShowAlert } from '../utils/earthquakeAlert';
-import api from '../../axios.js';
+import React, { useState, useEffect } from "react";
+import DashboardSidebar from "../section/DashboardSidebar";
+import AnalyticsFilters from "../section/AnalyticsFilters";
+import AnalyticsMetrics from "../section/AnalyticsMetrics";
+import SeismicActivityTimeline from "../section/SeismicActivityTimeline";
+import NotificationDropdown from "../components/NotificationDropdown";
+import EarthquakeDetailsModal from "../components/modals/EarthquakeDetailsModal";
+import EarthquakeAlertModal from "../components/modals/EarthquakeAlertModal";
+import { useEarthquakeAlert } from "../context/EarthquakeAlertContext";
+import { useEarthquakeMonitor } from "../hooks/useEarthquakeMonitor";
+import { shouldShowAlert } from "../utils/earthquakeAlert";
+import api from "../../axios.js";
 
 const Analytics = () => {
-  const { alertEarthquake, isAlertOpen, closeAlert, checkAndShowAlert, setViewMapHandler } = useEarthquakeAlert();
+  const {
+    alertEarthquake,
+    isAlertOpen,
+    closeAlert,
+    checkAndShowAlert,
+    setViewMapHandler,
+  } = useEarthquakeAlert();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [earthquakes, setEarthquakes] = useState([]);
   const [filteredEarthquakes, setFilteredEarthquakes] = useState([]);
@@ -25,46 +31,49 @@ const Analytics = () => {
         const today = new Date();
         const oneYearAgo = new Date();
         oneYearAgo.setFullYear(today.getFullYear() - 1);
-        
+
         const formatDate = (date) => {
           const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const day = String(date.getDate()).padStart(2, '0');
+          const month = String(date.getMonth() + 1).padStart(2, "0");
+          const day = String(date.getDate()).padStart(2, "0");
           return `${year}-${month}-${day}`;
         };
 
-        const response = await api.get('/earthquake/philippines', {
+        const response = await api.get("/earthquake/philippines", {
           params: {
             starttime: formatDate(oneYearAgo),
             endtime: formatDate(today),
             minMag: 3,
-            includeSimulated: true
+            includeSimulated: true,
           },
-          withCredentials: true
+          withCredentials: true,
         });
 
         const transformedData = response.data.map((quake) => {
-          const quakeTime = typeof quake.time === 'number' 
-            ? quake.time 
-            : (quake.time ? new Date(quake.time).getTime() : Date.now());
-          
+          const quakeTime =
+            typeof quake.time === "number"
+              ? quake.time
+              : quake.time
+              ? new Date(quake.time).getTime()
+              : Date.now();
+
           return {
-            magnitude: quake.magnitude?.toString() || '0.0',
-            location: quake.place || 'Unknown location',
+            magnitude: quake.magnitude?.toString() || "0.0",
+            location: quake.place || "Unknown location",
             latitude: quake.latitude,
             longitude: quake.longitude,
-            depth: quake.depth?.toString() || '0.0',
+            depth: quake.depth?.toString() || "0.0",
             time: quakeTime,
             timestamp: quakeTime,
-            isSimulated: quake.isSimulated || false
+            isSimulated: quake.isSimulated || false,
           };
         });
 
-        console.log('Analytics: Fetched earthquakes:', transformedData.length);
-        console.log('Analytics: Sample earthquake:', transformedData[0]);
+        console.log("Analytics: Fetched earthquakes:", transformedData.length);
+        console.log("Analytics: Sample earthquake:", transformedData[0]);
         setEarthquakes(transformedData);
       } catch (error) {
-        console.error('Error fetching earthquakes:', error);
+        console.error("Error fetching earthquakes:", error);
       }
     };
 
@@ -76,11 +85,17 @@ const Analytics = () => {
       fetchEarthquakes();
     };
 
-    window.addEventListener('simulatedEarthquakeAdded', handleSimulatedEarthquakeAdded);
-    
+    window.addEventListener(
+      "simulatedEarthquakeAdded",
+      handleSimulatedEarthquakeAdded
+    );
+
     return () => {
       clearInterval(interval);
-      window.removeEventListener('simulatedEarthquakeAdded', handleSimulatedEarthquakeAdded);
+      window.removeEventListener(
+        "simulatedEarthquakeAdded",
+        handleSimulatedEarthquakeAdded
+      );
     };
   }, []);
 
@@ -100,34 +115,44 @@ const Analytics = () => {
     const handleSimulatedAlert = (event) => {
       const earthquake = event.detail;
       if (earthquake) {
-        console.log('Received earthquake alert event:', earthquake);
+        console.log("Received earthquake alert event:", earthquake);
         checkAndShowAlert(earthquake);
       }
     };
 
-    window.addEventListener('earthquakeAlert', handleSimulatedAlert);
+    window.addEventListener("earthquakeAlert", handleSimulatedAlert);
     return () => {
-      window.removeEventListener('earthquakeAlert', handleSimulatedAlert);
+      window.removeEventListener("earthquakeAlert", handleSimulatedAlert);
     };
   }, [checkAndShowAlert]);
 
   return (
-    <div className="flex min-h-screen bg-[#1A1A1A]">
+    <div className="flex min-h-screen bg-[#1A1A1A] overflow-x-hidden">
       <DashboardSidebar />
 
-      <div className="flex-1 ml-64 p-8">
+      <div className="flex-1 lg:ml-64 ml-0 p-4 sm:p-6 lg:p-8 pt-20 lg:pt-8 max-w-full">
         <div className="flex justify-end items-start mb-6 relative">
           <div className="flex items-center space-x-4">
-            <button 
+            <button
               onClick={() => setIsNotificationOpen(!isNotificationOpen)}
               className="text-gray-400 hover:text-white transition-colors relative"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                />
               </svg>
             </button>
           </div>
-          
+
           <NotificationDropdown
             isOpen={isNotificationOpen}
             onClose={() => setIsNotificationOpen(false)}
@@ -139,13 +164,17 @@ const Analytics = () => {
           />
         </div>
 
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Analytics</h1>
-          <p className="text-gray-400">Seismic data and trends</p>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">
+            Analytics
+          </h1>
+          <p className="text-sm sm:text-base text-gray-400">
+            Seismic data and trends
+          </p>
         </div>
 
-        <AnalyticsFilters 
-          earthquakes={earthquakes} 
+        <AnalyticsFilters
+          earthquakes={earthquakes}
           onFilterChange={setFilteredEarthquakes}
         />
 

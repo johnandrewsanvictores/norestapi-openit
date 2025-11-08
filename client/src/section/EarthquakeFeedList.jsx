@@ -83,7 +83,7 @@ const EarthquakeFeedList = () => {
             starttime: dateRange.starttime,
             endtime: dateRange.endtime,
             minMag: 3,
-            includeSimulated: true
+            includeSimulated: true,
           },
           withCredentials: true,
         });
@@ -103,8 +103,8 @@ const EarthquakeFeedList = () => {
               alertColor: alert.color,
               bgColor: alert.bgColor,
               tsunami: quake.tsunami || 0,
-              magnitude_type: quake.magnitude_type || 'SIM',
-              isSimulated: quake.isSimulated || false
+              magnitude_type: quake.magnitude_type || "SIM",
+              isSimulated: quake.isSimulated || false,
             };
           })
           .sort((a, b) => b.timestamp - a.timestamp);
@@ -124,10 +124,16 @@ const EarthquakeFeedList = () => {
       fetchEarthquakes();
     };
 
-    window.addEventListener('simulatedEarthquakeAdded', handleSimulatedEarthquakeAdded);
-    
+    window.addEventListener(
+      "simulatedEarthquakeAdded",
+      handleSimulatedEarthquakeAdded
+    );
+
     return () => {
-      window.removeEventListener('simulatedEarthquakeAdded', handleSimulatedEarthquakeAdded);
+      window.removeEventListener(
+        "simulatedEarthquakeAdded",
+        handleSimulatedEarthquakeAdded
+      );
     };
   }, []);
 
@@ -172,7 +178,7 @@ const EarthquakeFeedList = () => {
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   if (earthquakes.length === 0) {
@@ -194,63 +200,69 @@ const EarthquakeFeedList = () => {
             onClick={() => handleEarthquakeClick(quake)}
             className="bg-[#2A2A2A] rounded-lg p-4 sm:p-6 border border-gray-800 hover:border-gray-700 transition-colors cursor-pointer"
           >
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-lg font-bold text-white">
-                  Magnitude {quake.magnitude} Earthquake
-                </h3>
-                {quake.isSimulated && (
-                  <span className="px-2 py-0.5 bg-yellow-600/30 border border-yellow-600/50 rounded text-xs text-yellow-300 font-semibold">
-                    SIMULATED
-                  </span>
-                )}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <h3 className="text-base sm:text-lg font-bold text-white">
+                    Magnitude {quake.magnitude} Earthquake
+                  </h3>
+                  {quake.isSimulated && (
+                    <span className="px-2 py-0.5 bg-yellow-600/30 border border-yellow-600/50 rounded text-xs text-yellow-300 font-semibold whitespace-nowrap">
+                      SIMULATED
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-400 mb-1 truncate sm:whitespace-normal">
+                  {quake.location}
+                </p>
+                <p className="text-xs text-gray-500">{quake.time}</p>
               </div>
-              <p className="text-sm text-gray-400 mb-1">{quake.location}</p>
-              <p className="text-xs text-gray-500">{quake.time}</p>
-            </div>
-            <div className={`ml-4 px-4 py-2 rounded-lg font-bold text-sm uppercase ${quake.alertColor} ${quake.bgColor}`}>
-              {quake.alertLevel}
+              <div
+                className={`px-4 py-2 rounded-lg font-bold text-sm uppercase text-center whitespace-nowrap ${quake.alertColor} ${quake.bgColor} self-start sm:self-auto`}
+              >
+                {quake.alertLevel}
+              </div>
             </div>
           </div>
         ))}
       </div>
 
       {totalPages > 1 && (
-        <div className="mt-8 flex items-center justify-center gap-2">
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-2">
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="px-4 py-2 bg-[#2A2A2A] border border-gray-700 rounded-lg text-white hover:bg-[#3A3A3A] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full sm:w-auto px-4 py-2 bg-[#2A2A2A] border border-gray-700 rounded-lg text-white hover:bg-[#3A3A3A] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
           >
             Previous
           </button>
-          
-          <div className="flex gap-2">
+
+          <div className="flex flex-wrap gap-2 justify-center">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
               if (
                 page === 1 ||
                 page === totalPages ||
-                (page >= currentPage - 2 && page <= currentPage + 2)
+                (page >= currentPage - 1 && page <= currentPage + 1)
               ) {
                 return (
                   <button
                     key={page}
                     onClick={() => handlePageChange(page)}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
+                    className={`px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm ${
                       currentPage === page
-                        ? 'bg-[#FF7F00] text-white'
-                        : 'bg-[#2A2A2A] border border-gray-700 text-white hover:bg-[#3A3A3A]'
+                        ? "bg-[#FF7F00] text-white"
+                        : "bg-[#2A2A2A] border border-gray-700 text-white hover:bg-[#3A3A3A]"
                     }`}
                   >
                     {page}
                   </button>
                 );
-              } else if (
-                page === currentPage - 3 ||
-                page === currentPage + 3
-              ) {
+              } else if (page === currentPage - 2 || page === currentPage + 2) {
                 return (
-                  <span key={page} className="px-2 text-gray-500">
+                  <span
+                    key={page}
+                    className="px-2 text-gray-500 flex items-center"
+                  >
                     ...
                   </span>
                 );
@@ -262,7 +274,7 @@ const EarthquakeFeedList = () => {
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="px-4 py-2 bg-[#2A2A2A] border border-gray-700 rounded-lg text-white hover:bg-[#3A3A3A] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full sm:w-auto px-4 py-2 bg-[#2A2A2A] border border-gray-700 rounded-lg text-white hover:bg-[#3A3A3A] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
           >
             Next
           </button>
@@ -270,7 +282,8 @@ const EarthquakeFeedList = () => {
       )}
 
       <div className="mt-4 text-center text-gray-400 text-sm">
-        Showing {startIndex + 1} to {Math.min(endIndex, earthquakes.length)} of {earthquakes.length} earthquakes
+        Showing {startIndex + 1} to {Math.min(endIndex, earthquakes.length)} of{" "}
+        {earthquakes.length} earthquakes
       </div>
 
       <EarthquakeDetailsModal
