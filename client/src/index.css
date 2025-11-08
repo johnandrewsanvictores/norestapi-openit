@@ -10,3 +10,29 @@
 html {
     scroll-behavior: smooth;
 }
+
+/* Custom slider styles */
+input[type="range"].slider {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+input[type="range"].slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #FF7F00;
+    cursor: pointer;
+    border: 2px solid #1A1A1A;
+}
+
+input[type="range"].slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #FF7F00;
+    cursor: pointer;
+    border: 2px solid #1A1A1A;
+}
