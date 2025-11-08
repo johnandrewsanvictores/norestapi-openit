@@ -1,15 +1,11 @@
 import React from 'react';
 import DashboardSidebar from '../section/DashboardSidebar';
-import MetricCards from '../section/MetricCards';
-import RecentEarthquakes from '../section/RecentEarthquakes';
-import AlertSettings from '../section/AlertSettings';
-import SeismicActivityChart from '../section/SeismicActivityChart';
+import EarthquakeFeedList from '../section/EarthquakeFeedList';
 
-const Dashboard = () => {
+const EarthquakeFeed = () => {
   return (
     <div className="flex min-h-screen bg-[#1A1A1A]">
       <DashboardSidebar />
-
       <div className="flex-1 ml-64 p-8">
         <div className="flex justify-end items-start mb-6">
           <div className="flex items-center space-x-4">
@@ -22,22 +18,15 @@ const Dashboard = () => {
         </div>
 
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Earthquake Monitor</h1>
-          <p className="text-gray-400">Real-time seismic activity tracking</p>
+          <h1 className="text-4xl font-bold text-white mb-2">Earthquake Feed</h1>
+          <p className="text-gray-400">Live earthquake events</p>
         </div>
 
-        <MetricCards />
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <RecentEarthquakes />
-          <AlertSettings />
-        </div>
-
-        <SeismicActivityChart />
+        <EarthquakeFeedList />
       </div>
     </div>
   );
 };
 
-export default Dashboard;
+export default EarthquakeFeed;
 

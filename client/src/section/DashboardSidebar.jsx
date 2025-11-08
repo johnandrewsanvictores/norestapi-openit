@@ -10,13 +10,16 @@ const DashboardSidebar = () => {
 
   return (
     <aside className="w-64 bg-[#1A1A1A] h-screen fixed left-0 top-0 flex flex-col border-r border-gray-800">
-      {/* Logo Section */}
       <div className="p-6 border-b border-gray-800">
-        <h1 className="text-2xl font-bold text-white mb-1">SeismoAlert</h1>
+        <div className="flex items-center space-x-2 mb-1">
+          <svg className="w-6 h-6 text-[#FF7F00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          <h1 className="text-2xl font-bold text-white">SeismoAlert</h1>
+        </div>
         <p className="text-sm text-gray-400">Early warning system</p>
       </div>
 
-      {/* Your Location Section */}
       <div className="p-6 border-b border-gray-800">
         <p className="text-xs text-gray-500 uppercase mb-2">YOUR LOCATION</p>
         <div className="flex items-center space-x-2">
@@ -27,7 +30,6 @@ const DashboardSidebar = () => {
         </div>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 p-4">
         <NavLink to="/dashboard" className={getNavLinkClass} end>
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -37,8 +39,8 @@ const DashboardSidebar = () => {
         </NavLink>
 
         <NavLink to="/dashboard/feed" className={getNavLinkClass}>
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
           </svg>
           <span>Earthquake Feed</span>
         </NavLink>
@@ -56,6 +58,13 @@ const DashboardSidebar = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
           <span>Settings</span>
+        </NavLink>
+
+        <NavLink to="/dashboard/profile" className={getNavLinkClass}>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          <span>Profile</span>
         </NavLink>
       </nav>
     </aside>

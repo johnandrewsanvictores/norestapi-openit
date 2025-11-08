@@ -33,30 +33,24 @@ function Homepage() {
   return (
     <>
       <div className="min-h-screen bg-[#1A1A1A] text-white">
-        {/* Hero Section */}
         <section className="flex flex-col items-center justify-center min-h-screen px-4 py-20">
-          {/* Top Banner */}
           <div className="mb-8 px-4 py-2 rounded-lg border border-[#FF7F00] text-[#FF7F00] text-sm font-semibold flex items-center gap-2">
             <span>▲</span>
             <span>Real-Time Monitoring</span>
           </div>
 
-          {/* Main Heading */}
           <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold text-white mb-4 text-center">
             Earthquake Alerts
           </h1>
 
-          {/* Sub-heading */}
           <h2 className="text-5xl md:text-6xl lg:text-7xl font-bold text-[#FF7F00] mb-6 text-center">
             When Seconds Matter
           </h2>
 
-          {/* Description */}
           <p className="text-lg md:text-xl text-white/90 max-w-2xl text-center mb-10 px-4">
             Get real-time earthquake alerts, detailed seismic data, and safety information to help protect yourself and your loved ones.
           </p>
 
-          {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4">
             <button
               onClick={handleGetStarted}
@@ -73,22 +67,18 @@ function Homepage() {
           </div>
         </section>
 
-        {/* Features Section */}
         <section className="py-20 px-4">
           <div className="max-w-7xl mx-auto">
-            {/* Section Heading */}
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white text-center mb-4">
               Comprehensive Earthquake Monitoring
             </h2>
 
-            {/* Section Sub-heading */}
             <p className="text-lg md:text-xl text-white/80 text-center mb-16 max-w-3xl mx-auto">
               Everything you need to stay informed and safe during seismic events
             </p>
 
-            {/* Feature Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Card 1: Instant Alerts */}
+
               <div className="bg-[#2A2A2A] rounded-lg p-6 border border-[#3A3A3A] hover:border-[#FF7F00]/50 transition-colors duration-200">
                 <div className="w-12 h-12 bg-[#1A1A1A] rounded-lg flex items-center justify-center mb-4">
                   <svg className="w-6 h-6 text-[#FF7F00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -101,7 +91,6 @@ function Homepage() {
                 </p>
               </div>
 
-              {/* Card 2: Precise Location */}
               <div className="bg-[#2A2A2A] rounded-lg p-6 border border-[#3A3A3A] hover:border-[#FF7F00]/50 transition-colors duration-200">
                 <div className="w-12 h-12 bg-[#1A1A1A] rounded-lg flex items-center justify-center mb-4">
                   <svg className="w-6 h-6 text-[#FF7F00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,7 +104,7 @@ function Homepage() {
                 </p>
               </div>
 
-              {/* Card 3: Safety Info */}
+  
               <div className="bg-[#2A2A2A] rounded-lg p-6 border border-[#3A3A3A] hover:border-[#FF7F00]/50 transition-colors duration-200">
                 <div className="w-12 h-12 bg-[#1A1A1A] rounded-lg flex items-center justify-center mb-4">
                   <svg className="w-6 h-6 text-[#FF7F00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -128,7 +117,6 @@ function Homepage() {
                 </p>
               </div>
 
-              {/* Card 4: Live Data */}
               <div className="bg-[#2A2A2A] rounded-lg p-6 border border-[#3A3A3A] hover:border-[#FF7F00]/50 transition-colors duration-200">
                 <div className="w-12 h-12 bg-[#1A1A1A] rounded-lg flex items-center justify-center mb-4">
                   <svg className="w-6 h-6 text-[#FF7F00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -144,20 +132,17 @@ function Homepage() {
           </div>
         </section>
 
-        {/* Final CTA Section */}
         <section className="py-20 px-4">
           <div className="max-w-4xl mx-auto text-center">
-            {/* Section Heading */}
+
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
               Stay Protected From Earthquakes
             </h2>
 
-            {/* Description */}
             <p className="text-lg md:text-xl text-white/80 mb-10 max-w-2xl mx-auto">
               Get instant alerts and comprehensive earthquake data to help you stay safe and informed.
             </p>
 
-            {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={handleSignIn}
@@ -176,7 +161,6 @@ function Homepage() {
         </section>
       </div>
 
-      {/* Modals */}
       <SignInModal
         isOpen={isSignInModalOpen}
         onClose={handleCloseModals}
