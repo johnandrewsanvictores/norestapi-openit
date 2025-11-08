@@ -1,10 +1,16 @@
+import { Routes, Route, Navigate } from "react-router-dom";
+
+import Homepage from "./pages/Homepage.jsx";
+
 function App() {
+
   return (
     <>
-      <h1 className="text-red-500 text-4xl flex justify-center h-screen w-screen items-center">Hello from me </h1>
-        <p className="text-blue-700 text-7xl">Hello world</p>
+      <Routes>
+        <Route path="/" element={<Homepage />} />
+      </Routes>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
