@@ -9,6 +9,10 @@ export const add_alert_threshold = async (req, res) => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
+        if(await Alert_threshold.findOne({ user_id: currentUser._id })) {
+            return res.status(400).json({ error: 'Alert threshold already exists for this user' });
+        }
+
         const alertThreshold = await Alert_threshold.create({
             user_id: currentUser._id,
             latitude,
