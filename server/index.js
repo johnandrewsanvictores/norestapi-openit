@@ -88,7 +88,79 @@ app.post('/send-sms', async (req, res) => {
     }
 });
 
+/* get request to the pollination api with this query:
+https://text.pollinations.ai/analyze the area_type of the given location of earthquakes with coordinates below,with x kilometer away from with direction like identify what type of location like "88 km NE of Dicabisagan, Philippines"   and return me the earthquake safety guide in the json format like below based on the earthquake proximity for example if near in coastal then evauate to the high lands. You should give safety guides based on proximity or related to it. If its not coastal, then don't suggest about the guideline like in coastal.
+given:
+{
+place: "3 km N of Union, Philippines",
+coordinates: ["9.800404264254931", "126.09921400732965"]
+}
+output (json only) formmated in this format only  nothing more:
+{
+place: "Mauban Quezon",
+coordinates: ["14.267876275020605", "121.73146637692165"],
+safety_guide: [
+"Move to higher ground immediately to avoid potential tsunamis or storm surges. Keep emergency kits ready and stay updated with local advisories.",
+"Evacuate to elevated areas and avoid low-lying zones prone to flooding. Ensure a safe route inland and inform family members of your location.",
+...}
+}*/
 
+app.get('/pollination-safety-guide', async (req, res) => {
+    try {
+                const { place, coordinates } = req.query;
+                const prompt = `You are an expert in earthquake safety and geographic analysis. Analyze the earthquake location details provided below and generate contextually appropriate safety guidelines.
+
+                Task:
+                1. Identify the area type (coastal, mountainous, urban, rural, etc.) based on the place name and coordinates
+                2. Determine proximity and direction (e.g., "88 km NE of Dicabisagan, Philippines")
+                3. Generate 3-5 specific, actionable safety guidelines based on the identified area type and earthquake proximity
+
+                Rules:
+                - Safety guidelines MUST be relevant to the identified area type only
+                - If coastal: include tsunami/storm surge evacuation procedures
+                - If mountainous: include landslide warnings and stable ground identification
+                - If urban: include building safety, structural hazards, and evacuation routes
+                - If rural: include open area safety and distance from structures
+                - Do NOT include coastal guidelines for non-coastal areas
+                - Do NOT include mountain-specific advice for flat areas
+                - Each guideline should be clear, concise, and immediately actionable
+
+                This is the input Data:
+                {
+                    "place": "${place}",
+                    "coordinates": ["${coordinates[0]}", "${coordinates[1]}"]
+                }
+
+                Output Requirements:
+                - Return ONLY valid JSON in a single line (no newlines, no \\n characters)
+                - Format exactly as shown below with no additional text or explanation
+                - Include 3-5 safety guidelines as array items
+
+                Return this: Expected JSON Output Format:
+                {"place":"${place}","coordinates":["${coordinates[0]}","${coordinates[1]}"],"safety_guide":["Guideline 1 text here","Guideline 2 text here","Guideline 3 text here"]}
+                
+                return the place, coordinates and safety_guide as an array of strings only
+                `;
+
+                
+         
+                const pollinationApiUrl = 'https://text.pollinations.ai/'+prompt;
+
+       const response = await axios.get(pollinationApiUrl, {
+           place,
+           coordinates
+       });
+
+       console.log(response.data);
+
+       const safetyGuide = response.data.safety_guide;
+
+       res.status(200).json(JSON.parse(response.data));
+   } catch (error) {
+       console.error('Error fetching pollination safety guide:', error);
+       res.status(500).json({ error: 'Failed to fetch safety guide' + error.message });
+   }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
