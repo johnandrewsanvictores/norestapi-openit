@@ -2,6 +2,7 @@ import express from 'express';
 import cookieParser from "cookie-parser";
 import cors from 'cors';
 import authRoutes from './routes/auth.js';
+import earthquakeRoutes from './routes/earthquake_data.js';
 import connectDbB from "./config/db.js";
 import session from 'express-session';
 
@@ -16,6 +17,7 @@ app.use(cookieParser());
 app.use(cors());
 
 app.use("/auth", authRoutes);
+app.get("/earthquake",  earthquakeRoutes)
 
 app.use(session({
     secret: process.env.SESSION_SECRET,
