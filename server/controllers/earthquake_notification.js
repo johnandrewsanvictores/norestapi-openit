@@ -77,18 +77,18 @@ export const notifyUsersInRange = async (req, res) => {
     const usersInRange = [];
     const phoneNumbers = new Set(); 
 
-    // Check current user's settings if provided (from localStorage)
+    
     if (currentUserSettings && currentUserSettings.latitude && currentUserSettings.longitude) {
-      // Get current user from session/cookie
+      
       const currentUser = req.user;
       
       if (currentUser) {
         const user = await User.findById(currentUser._id).select('phone_number username');
         
         if (user && user.phone_number) {
-          // Check if magnitude meets minimum requirement
+          
           if (earthquakeMagnitude >= currentUserSettings.minimum_magnitude) {
-            // Calculate distance from earthquake to user's alert location
+            
             const distance = calculateDistance(
               currentUserSettings.latitude,
               currentUserSettings.longitude,
@@ -96,7 +96,7 @@ export const notifyUsersInRange = async (req, res) => {
               earthquakeLon
             );
 
-            // Check if earthquake is within alert radius
+            
             if (distance <= currentUserSettings.alert_radius) {
               const normalizedPhone = normalizePhoneNumber(user.phone_number);
               if (normalizedPhone) {
@@ -115,23 +115,23 @@ export const notifyUsersInRange = async (req, res) => {
       }
     }
 
-    // Check each user's alert threshold from database
+    
     for (const threshold of alertThresholds) {
       if (!threshold.user_id || !threshold.user_id.phone_number) {
         continue;
       }
 
-      // Skip if already added from currentUserSettings
+      
       if (phoneNumbers.has(threshold.user_id.phone_number)) {
         continue;
       }
 
-      // Check if magnitude meets minimum requirement
+      
       if (earthquakeMagnitude < threshold.minimum_magnitude) {
         continue;
       }
 
-      // Calculate distance from earthquake to user's alert location
+      
       const distance = calculateDistance(
         threshold.latitude,
         threshold.longitude,
@@ -139,7 +139,7 @@ export const notifyUsersInRange = async (req, res) => {
         earthquakeLon
       );
 
-      // Check if earthquake is within alert radius
+      
       if (distance <= threshold.alert_radius) {
         const normalizedPhone = normalizePhoneNumber(threshold.user_id.phone_number);
         if (normalizedPhone) {
@@ -155,10 +155,10 @@ export const notifyUsersInRange = async (req, res) => {
       }
     }
 
-    // Convert Set to Array
+    
     const phoneNumbersArray = Array.from(phoneNumbers);
 
-    // If no users in range, return early
+    
     if (phoneNumbersArray.length === 0) {
       return res.status(200).json({
         success: true,
@@ -167,11 +167,11 @@ export const notifyUsersInRange = async (req, res) => {
       });
     }
 
-    // Create SMS message
+    
     const locationText = location || `${earthquakeLat.toFixed(4)}, ${earthquakeLon.toFixed(4)}`;
     const smsText = `🚨 EARTHQUAKE ALERT 🚨\n\nMagnitude: ${earthquakeMagnitude.toFixed(1)}\nLocation: ${locationText}\nDepth: ${depth ? depth + ' km' : 'N/A'}\nTime: ${time ? new Date(time).toLocaleString() : 'Just now'}\n\nPlease stay safe and follow safety guidelines.`;
 
-    // Send SMS to all users in range
+    
     try {
       const smsApiUrl = 'https://api.sms-gate.app/3rdparty/v1/message';
       const smsApiUsername = process.env.SMS_API_USERNAME;
