@@ -6,7 +6,7 @@ import { Link, NavLink } from "react-router-dom";
 import logo from "../../assets/SamaKa.png";
 import SignInModal from "../modals/SignInModal";
 import SignUpModal from "../modals/SignUpModal";
-import { useAuth } from "../../context/AuthContext.jsx";
+import { useAuth } from "../../context/AuthContext.jsx";  
 import api from "../../../axios.js";
 import { showConfirmation, showSuccess } from "../../utils/alertHelper.js";
 import { useNavigate } from "react-router-dom";
@@ -93,7 +93,7 @@ const Nav = () => {
 
   return (
     <>
-      <nav className="bg-bgColor2 py-4 lg:py-6 relative z-50 shadow-sm">
+      <nav className=" bg-red-800 py-4 lg:py-6 relative z-50 shadow-sm">
         <div className="flex justify-between items-center w-full mx-auto px-4 lg:px-8">
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-3 lg:space-x-4">
@@ -103,8 +103,8 @@ const Nav = () => {
                 className="h-10 w-10 lg:h-12 lg:w-12"
               />
               <span className="text-headingText font-nunito font-bold text-xl lg:text-3xl">
-                <span className="text-primary">Bayani</span>
-                <span className="text-subHeadingText">mo</span>
+                <span className="text-primary">Tara</span>
+                <span className="text-subHeadingText">Saan</span>
               </span>
             </Link>
           </div>

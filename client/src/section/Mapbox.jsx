@@ -3,15 +3,12 @@ import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-const MapboxExample = () => {
+const Mapbox = () => {
   const mapContainerRef = useRef();
   const mapRef = useRef();
 
   useEffect(() => {
-    // TO MAKE THE MAP APPEAR YOU MUST
-    // ADD YOUR ACCESS TOKEN FROM
-    // https://account.mapbox.com
-    mapboxgl.accessToken = 'YOUR_MAPBOX_ACCESS_TOKEN';
+    mapboxgl.accessToken = 'pk.eyJ1IjoiamRyZXd3IiwiYSI6ImNtaHB3eWpnYTBjc3EycnF6ZWY4NmJqOHkifQ.tomWXBmHn5UgNicCIlRukQ';
 
     if (mapRef.current) return;
 
@@ -105,4 +102,4 @@ const MapboxExample = () => {
   return <div id="map" ref={mapContainerRef} style={{ height: '100%' }}></div>;
 };
 
-export default MapboxExample;
+export default Mapbox;
