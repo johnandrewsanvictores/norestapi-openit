@@ -29,8 +29,8 @@ This is a full-stack MERN & Tailwindcss boilerplate using Docker Compose, design
 1. **Clone the repository:**
 
 ```bash
-git clone https://github.com/johnandrewsanvictores/MERN-tailwind-docker-boilerplate.git
-cd MERN-tailwind-docker-boilerplate
+git clone https://github.com/johnandrewsanvictores/norestapi-openit.git
+cd norestapi-openit
 ```
 
 2. **Set up environment files:**

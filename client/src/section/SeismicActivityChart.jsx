@@ -109,4 +109,3 @@ const SeismicActivityChart = ({ earthquakes = [] }) => {
 };
 
 export default SeismicActivityChart;
-

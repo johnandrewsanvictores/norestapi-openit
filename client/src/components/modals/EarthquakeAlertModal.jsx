@@ -1,8 +1,143 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../../../axios';
+import { 
+  getCachedSafetyGuide, 
+  saveSafetyGuideToCache, 
+  generateSafetyGuideKey,
+  isOnline 
+} from '../../utils/cacheHelper';
+import { generateAlertSound } from '../../utils/soundGenerator';
 
 const EarthquakeAlertModal = ({ isOpen, onClose, earthquake, onViewMap }) => {
   const navigate = useNavigate();
+  const [safetyGuide, setSafetyGuide] = useState([]);
+  const [loadingSafetyGuide, setLoadingSafetyGuide] = useState(false);
+  const [isCachedGuide, setIsCachedGuide] = useState(false);
+  const alertSoundRef = useRef(null);
+
+  useEffect(() => {
+    const fetchSafetyGuide = async () => {
+      if (!isOpen || !earthquake) {
+        setSafetyGuide([]);
+        return;
+      }
+
+      const place = earthquake.location || 'Unknown location';
+      const coordinates = earthquake.longitude && earthquake.latitude 
+        ? [earthquake.longitude.toString(), earthquake.latitude.toString()]
+        : ['121.0', '12.0'];
+      
+      const cacheKey = generateSafetyGuideKey(place, coordinates);
+      
+      
+      const cachedGuide = getCachedSafetyGuide(cacheKey);
+      if (cachedGuide) {
+        setSafetyGuide(cachedGuide);
+        setIsCachedGuide(true);
+        setLoadingSafetyGuide(false);
+      } else {
+        setIsCachedGuide(false);
+      }
+
+      
+      if (isOnline()) {
+        setLoadingSafetyGuide(true);
+        try {
+          const response = await api.get('/pollination-safety-guide', {
+            params: {
+              place: place,
+              'coordinates[0]': coordinates[0],
+              'coordinates[1]': coordinates[1]
+            },
+            withCredentials: true
+          });
+
+          if (response.data && response.data.safety_guide && Array.isArray(response.data.safety_guide)) {
+            setSafetyGuide(response.data.safety_guide);
+            setIsCachedGuide(false);
+            
+            saveSafetyGuideToCache(cacheKey, response.data.safety_guide);
+          } else if (!cachedGuide) {
+            setSafetyGuide([]);
+          }
+        } catch (error) {
+          console.error('Error fetching safety guide:', error);
+          
+          if (!cachedGuide) {
+            setSafetyGuide([]);
+          }
+        } finally {
+          setLoadingSafetyGuide(false);
+        }
+      } else {
+        
+        if (!cachedGuide) {
+          setSafetyGuide([]);
+        }
+        setLoadingSafetyGuide(false);
+      }
+    };
+
+    fetchSafetyGuide();
+  }, [isOpen, earthquake]);
+
+  
+  useEffect(() => {
+    if (isOpen && earthquake) {
+      try {
+        
+        if (alertSoundRef.current) {
+          alertSoundRef.current.stop();
+        }
+        
+        
+        const sound = generateAlertSound();
+        alertSoundRef.current = sound;
+        
+        
+        const playSoundSequence = () => {
+          if (alertSoundRef.current) {
+            alertSoundRef.current.stop();
+          }
+          alertSoundRef.current = generateAlertSound();
+        };
+        
+        
+        playSoundSequence();
+        
+        
+        const interval1 = setTimeout(() => {
+          if (isOpen) {
+            playSoundSequence();
+          }
+        }, 1500);
+        
+        
+        const interval2 = setTimeout(() => {
+          if (isOpen) {
+            playSoundSequence();
+          }
+        }, 3000);
+        
+        return () => {
+          clearTimeout(interval1);
+          clearTimeout(interval2);
+          if (alertSoundRef.current) {
+            alertSoundRef.current.stop();
+          }
+        };
+      } catch (error) {
+        console.error('Error playing alert sound:', error);
+      }
+    } else {
+      
+      if (alertSoundRef.current) {
+        alertSoundRef.current.stop();
+        alertSoundRef.current = null;
+      }
+    }
+  }, [isOpen, earthquake]);
 
   if (!isOpen || !earthquake) return null;
 
@@ -21,14 +156,14 @@ const EarthquakeAlertModal = ({ isOpen, onClose, earthquake, onViewMap }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#1A1A1A] rounded-lg w-full max-w-lg mx-4 relative overflow-hidden shadow-2xl">
+      <div className="bg-[#1A1A1A] rounded-lg w-full max-w-lg mx-4 relative max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
         <button
           onClick={handleDismiss}
-          className="absolute top-4 right-4 z-10 text-white hover:text-gray-300 text-2xl transition-colors"
+          className="absolute top-4 right-4 z-20 text-white hover:text-gray-300 text-2xl transition-colors bg-[#1A1A1A]/80 rounded-full w-8 h-8 flex items-center justify-center"
         >
           ×
         </button>
-
+        <div className="overflow-y-auto flex-1">
         <div className="bg-gradient-to-r from-red-600 to-red-700 px-6 py-5">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 flex items-center justify-center bg-white/20 rounded-full">
@@ -75,28 +210,49 @@ const EarthquakeAlertModal = ({ isOpen, onClose, earthquake, onViewMap }) => {
         </div>
 
         <div className="bg-blue-900/30 rounded-lg m-4 p-5 border border-blue-800/50">
-          <h3 className="text-blue-300 font-bold text-lg mb-4">Immediate Actions</h3>
-          <ul className="space-y-2 text-white text-sm">
-            <li className="flex items-start gap-2">
-              <span className="text-blue-400 mt-1">•</span>
-              <span>Drop, Cover, and Hold On if indoors</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-400 mt-1">•</span>
-              <span>Move away from buildings if outdoors</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-400 mt-1">•</span>
-              <span>Do not use elevators</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-blue-400 mt-1">•</span>
-              <span>Check for injuries after shaking stops</span>
-            </li>
-          </ul>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-blue-300 font-bold text-lg">Immediate Actions</h3>
+            {isCachedGuide && !isOnline() && (
+              <span className="text-xs text-blue-400 bg-blue-900/50 px-2 py-1 rounded">
+                Offline
+              </span>
+            )}
+          </div>
+          {loadingSafetyGuide ? (
+            <div className="text-blue-200 text-sm">Loading safety guidelines...</div>
+          ) : safetyGuide.length > 0 ? (
+            <ul className="space-y-2 text-white text-sm">
+              {safetyGuide.map((guide, index) => (
+                <li key={index} className="flex items-start gap-2">
+                  <span className="text-blue-400 mt-1">•</span>
+                  <span>{guide}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <ul className="space-y-2 text-white text-sm">
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400 mt-1">•</span>
+                <span>Drop, Cover, and Hold On if indoors</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400 mt-1">•</span>
+                <span>Move away from buildings if outdoors</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400 mt-1">•</span>
+                <span>Do not use elevators</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400 mt-1">•</span>
+                <span>Check for injuries after shaking stops</span>
+              </li>
+            </ul>
+          )}
+        </div>
         </div>
 
-        <div className="flex gap-3 p-4 border-t border-gray-800">
+        <div className="flex gap-3 p-4 border-t border-gray-800 bg-[#1A1A1A]">
           <button
             onClick={handleDismiss}
             className="flex-1 bg-[#2A2A2A] text-white py-3 rounded-lg font-semibold hover:bg-[#3A3A3A] transition-colors"

@@ -48,7 +48,7 @@ const SignInModal = ({ isOpen, onClose, onSwitchToSignUp, onLocationPermissionRe
     if (error) setError("");
   };
 
-  // Check if location is set
+  
   const checkLocation = () => {
     try {
       const locationData = localStorage.getItem('userLocation');

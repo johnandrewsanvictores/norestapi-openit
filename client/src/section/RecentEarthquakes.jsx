@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 const RecentEarthquakes = ({ earthquakes = [] }) => {
   const getQuakeTimestamp = (quake) => {
@@ -53,10 +53,14 @@ const RecentEarthquakes = ({ earthquakes = [] }) => {
     .slice(0, 5);
 
   return (
-    <div className="bg-[#2A2A2A] rounded-lg p-6 border border-gray-800">
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-white mb-2">Recent Earthquakes</h2>
-        <p className="text-sm text-gray-400">Live feed from USGS Earthquake Hazards Program</p>
+    <div className="bg-[#2A2A2A] rounded-lg p-4 sm:p-6 border border-gray-800">
+      <div className="mb-4 sm:mb-6">
+        <h2 className="text-lg sm:text-xl font-bold text-white mb-1 sm:mb-2">
+          Recent Earthquakes
+        </h2>
+        <p className="text-xs sm:text-sm text-gray-400">
+          Live feed from USGS Earthquake Hazards Program
+        </p>
       </div>
 
       <div className="space-y-4">
@@ -99,4 +103,3 @@ const RecentEarthquakes = ({ earthquakes = [] }) => {
 };
 
 export default RecentEarthquakes;
-

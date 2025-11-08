@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 const AnalyticsMetrics = ({ earthquakes = [] }) => {
   const getQuakeTimestamp = (quake) => {
@@ -94,7 +94,7 @@ const AnalyticsMetrics = ({ earthquakes = [] }) => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 lg:mb-8">
       {metrics.map((metric, index) => (
         <div key={index} className="bg-[#2A2A2A] rounded-lg p-6 border border-gray-800 hover:border-gray-700 transition-colors">
           <div className="flex items-center justify-between mb-3">
@@ -114,4 +114,3 @@ const AnalyticsMetrics = ({ earthquakes = [] }) => {
 };
 
 export default AnalyticsMetrics;
-

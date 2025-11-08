@@ -127,4 +127,3 @@ const SeismicActivityTimeline = ({ earthquakes = [] }) => {
 };
 
 export default SeismicActivityTimeline;
-

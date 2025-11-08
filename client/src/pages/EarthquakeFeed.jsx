@@ -154,4 +154,3 @@ const EarthquakeFeed = () => {
 };
 
 export default EarthquakeFeed;
-

@@ -10,7 +10,7 @@ const AlertSettings = () => {
   const [notificationMethods, setNotificationMethods] = useState({
     browserPush: true,
     email: false,
-    sms: false
+    sms: false,
   });
 
   useEffect(() => {
@@ -43,9 +43,9 @@ const AlertSettings = () => {
   }, []);
 
   const handleNotificationToggle = (method) => {
-    setNotificationMethods(prev => ({
+    setNotificationMethods((prev) => ({
       ...prev,
-      [method]: !prev[method]
+      [method]: !prev[method],
     }));
   };
 
@@ -88,8 +88,10 @@ const AlertSettings = () => {
   };
 
   return (
-    <div className="bg-[#2A2A2A] rounded-lg p-6 border border-gray-800">
-      <h2 className="text-xl font-bold text-white mb-6">Alert Settings</h2>
+    <div className="bg-[#2A2A2A] rounded-lg p-4 sm:p-6 border border-gray-800">
+      <h2 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6">
+        Alert Settings
+      </h2>
 
       <div className="space-y-6">
         <div>
@@ -115,7 +117,7 @@ const AlertSettings = () => {
         </div>
 
         <div>
-          <label className="block text-white font-medium mb-3">
+          <label className="block text-sm sm:text-base text-white font-medium mb-2 sm:mb-3">
             Minimum Magnitude
           </label>
           <div className="relative">
@@ -165,23 +167,28 @@ const AlertSettings = () => {
         </div>
 
         <div>
-          <label className="block text-white font-medium mb-3">
+          <label className="block text-sm sm:text-base text-white font-medium mb-2 sm:mb-3">
             Notification Methods
           </label>
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             {[
-              { key: 'browserPush', label: 'Browser Push' },
-              { key: 'email', label: 'Email' },
-              { key: 'sms', label: 'SMS' }
+              { key: "browserPush", label: "Browser Push" },
+              { key: "email", label: "Email" },
+              { key: "sms", label: "SMS" },
             ].map((method) => (
-              <label key={method.key} className="flex items-center space-x-3 cursor-pointer">
+              <label
+                key={method.key}
+                className="flex items-center space-x-3 cursor-pointer"
+              >
                 <input
                   type="checkbox"
                   checked={notificationMethods[method.key]}
                   onChange={() => handleNotificationToggle(method.key)}
-                  className="w-5 h-5 rounded border-gray-600 bg-[#1A1A1A] text-[#FF7F00] focus:ring-[#FF7F00] focus:ring-offset-0"
+                  className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-600 bg-[#1A1A1A] text-[#FF7F00] focus:ring-[#FF7F00] focus:ring-offset-0"
                 />
-                <span className="text-gray-300">{method.label}</span>
+                <span className="text-sm sm:text-base text-gray-300">
+                  {method.label}
+                </span>
               </label>
             ))}
           </div>
@@ -189,7 +196,7 @@ const AlertSettings = () => {
 
         <button
           onClick={handleSave}
-          className="w-full bg-[#FF7F00] text-white py-3 rounded-lg font-semibold hover:bg-[#FF8F20] transition-colors"
+          className="w-full bg-[#FF7F00] text-white py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold hover:bg-[#FF8F20] transition-colors"
         >
           Save Changes
         </button>
@@ -199,4 +206,3 @@ const AlertSettings = () => {
 };
 
 export default AlertSettings;
-
