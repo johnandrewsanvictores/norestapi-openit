@@ -16,12 +16,10 @@ const earthquakeSchema = new mongoose.Schema({
     depth: {
         type: Number,
         required: true,
-        // Depth in kilometers
     },
     mag: {
         type: Number,
         required: true,
-        // Magnitude as double
     },
     location: {
         type: String,
