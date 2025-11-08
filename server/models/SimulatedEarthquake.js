@@ -1,9 +1,8 @@
 import mongoose from 'mongoose';
-import { Timestamp } from 'mongodb';
 
-const earthquakeSchema = new mongoose.Schema({
+const simulatedEarthquakeSchema = new mongoose.Schema({
     time: {
-        type: Timestamp,
+        type: Number,
         required: true
     },
     latitude: {
@@ -26,17 +25,26 @@ const earthquakeSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    tsunami: {
-        type: Boolean,
-        default: false
-    },
     magnitude_type: {
         type: String,
+        default: 'SIM'
+    },
+    tsunami: {
+        type: Number,
+        default: 0
+    },
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
         required: true
+    },
+    isSimulated: {
+        type: Boolean,
+        default: true
     }
 }, { timestamps: true });
 
-const Earthquake = mongoose.model('Earthquake', earthquakeSchema);
+const SimulatedEarthquake = mongoose.model('SimulatedEarthquake', simulatedEarthquakeSchema);
 
-export default Earthquake;
+export default SimulatedEarthquake;
 
