@@ -26,11 +26,8 @@ const ProfileForm = () => {
   };
 
   const handleSave = () => {
-    if (
-      formData.newPassword &&
-      formData.newPassword !== formData.confirmPassword
-    ) {
-      setError("New passwords do not match");
+    if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
+      setError('New passwords do not match');
       return;
     }
 
@@ -39,7 +36,7 @@ const ProfileForm = () => {
       return;
     }
 
-    console.log("Profile updated:", {
+    console.log('Profile updated:', {
       username: formData.username,
       phoneNumber: formData.phoneNumber,
       currentPassword: formData.currentPassword,
@@ -88,13 +85,11 @@ const ProfileForm = () => {
           />
         </div>
 
-        <div className="pt-3 sm:pt-4 border-t border-gray-700">
-          <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">
-            Change Password
-          </h3>
-
-          <div className="mb-3 sm:mb-4">
-            <label className="block text-sm sm:text-base text-white font-medium mb-2">
+        <div className="pt-4 border-t border-gray-700">
+          <h3 className="text-lg font-semibold text-white mb-4">Change Password</h3>
+          
+          <div className="mb-4">
+            <label className="block text-white font-medium mb-2">
               Current Password
             </label>
             <div className="relative">
@@ -150,8 +145,8 @@ const ProfileForm = () => {
             </div>
           </div>
 
-          <div className="mb-3 sm:mb-4">
-            <label className="block text-sm sm:text-base text-white font-medium mb-2">
+          <div className="mb-4">
+            <label className="block text-white font-medium mb-2">
               New Password
             </label>
             <div className="relative">

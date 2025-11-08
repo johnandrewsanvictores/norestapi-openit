@@ -1,13 +1,46 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from 'react';
+import { getUserCountry, getLocationsByCountry } from '../utils/locationData.js';
+import { showSuccess, showError } from '../utils/alertHelper.js';
 
 const AlertSettings = () => {
   const [minMagnitude, setMinMagnitude] = useState(3.0);
-  const [detectionRadius, setDetectionRadius] = useState(50);
+  const [detectionRadius, setDetectionRadius] = useState(100);
+  const [location, setLocation] = useState('Default');
+  const [locations, setLocations] = useState([]);
   const [notificationMethods, setNotificationMethods] = useState({
     browserPush: true,
     email: false,
     sms: false,
   });
+
+  useEffect(() => {
+    try {
+      const userCountry = getUserCountry();
+      const countryLocations = getLocationsByCountry(userCountry);
+      setLocations(['Default', ...countryLocations]);
+
+      const settings = localStorage.getItem('alertSettings');
+      if (settings) {
+        const parsed = JSON.parse(settings);
+        setMinMagnitude(parseFloat(parsed.minMagnitude || 3.0));
+        setDetectionRadius(parseFloat(parsed.alertRadius || 100));
+        
+        if (parsed.location && (parsed.location === 'Default' || countryLocations.includes(parsed.location))) {
+          setLocation(parsed.location);
+        } else {
+          setLocation('Default');
+        }
+      } else {
+        setLocation('Default');
+      }
+    } catch (error) {
+      console.error('Error loading alert settings:', error);
+      const userCountry = getUserCountry();
+      const defaultLocations = getLocationsByCountry(userCountry);
+      setLocations(['Default', ...defaultLocations]);
+      setLocation('Default');
+    }
+  }, []);
 
   const handleNotificationToggle = (method) => {
     setNotificationMethods((prev) => ({
@@ -17,11 +50,41 @@ const AlertSettings = () => {
   };
 
   const handleSave = () => {
-    console.log("Settings saved:", {
-      minMagnitude,
-      detectionRadius,
-      notificationMethods,
-    });
+    const magnitude = parseFloat(minMagnitude);
+    const radius = parseFloat(detectionRadius);
+    
+    if (isNaN(magnitude) || magnitude < 0 || magnitude > 10) {
+      showError('Minimum magnitude must be between 0 and 10');
+      return;
+    }
+    
+    if (isNaN(radius) || radius < 0 || radius > 10000) {
+      showError('Alert radius must be between 0 and 10000 km');
+      return;
+    }
+    
+    if (!location || location === '') {
+      showError('Please select a location');
+      return;
+    }
+    
+    const settings = {
+      minMagnitude: magnitude,
+      alertRadius: radius,
+      location: location
+    };
+    
+    try {
+      localStorage.setItem('alertSettings', JSON.stringify(settings));
+      console.log('Alert settings saved:', settings);
+      
+      window.dispatchEvent(new Event('alertSettingsUpdated'));
+      
+      showSuccess('Alert settings saved successfully!');
+    } catch (error) {
+      console.error('Error saving alert settings:', error);
+      showError('Error saving settings. Please try again.');
+    }
   };
 
   return (
@@ -30,7 +93,29 @@ const AlertSettings = () => {
         Alert Settings
       </h2>
 
-      <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-6">
+        <div>
+          <label className="block text-white font-medium mb-3">
+            Location
+          </label>
+          <select
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            className="w-full px-4 py-3 bg-[#1A1A1A] border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF7F00] transition-colors"
+          >
+            {locations.map((loc) => (
+              <option key={loc} value={loc} className="bg-[#1A1A1A]">
+                {loc === 'Default' ? 'Default (Use GPS Location)' : loc}
+              </option>
+            ))}
+          </select>
+          <p className="text-gray-400 text-xs mt-2">
+            {location === 'Default' 
+              ? 'Alerts will be based on your current GPS location' 
+              : `Alerts will be based on ${location}`}
+          </p>
+        </div>
+
         <div>
           <label className="block text-sm sm:text-base text-white font-medium mb-2 sm:mb-3">
             Minimum Magnitude
@@ -38,57 +123,45 @@ const AlertSettings = () => {
           <div className="relative">
             <input
               type="range"
-              min="1.0"
-              max="8.0"
+              min="0"
+              max="10"
               step="0.1"
               value={minMagnitude}
               onChange={(e) => setMinMagnitude(parseFloat(e.target.value))}
               className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
               style={{
-                background: `linear-gradient(to right, #FF7F00 0%, #FF7F00 ${
-                  ((minMagnitude - 1.0) / 7.0) * 100
-                }%, #4A4A4A ${
-                  ((minMagnitude - 1.0) / 7.0) * 100
-                }%, #4A4A4A 100%)`,
+                background: `linear-gradient(to right, #FF7F00 0%, #FF7F00 ${((minMagnitude - 0) / 10) * 100}%, #4A4A4A ${((minMagnitude - 0) / 10) * 100}%, #4A4A4A 100%)`
               }}
             />
             <div className="flex justify-between text-xs text-gray-400 mt-2">
-              <span>1.0</span>
-              <span className="text-[#FF7F00] font-semibold">
-                {minMagnitude.toFixed(1)}
-              </span>
-              <span>8.0</span>
+              <span>0.0</span>
+              <span className="text-[#FF7F00] font-semibold">{minMagnitude.toFixed(1)}</span>
+              <span>10.0</span>
             </div>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm sm:text-base text-white font-medium mb-2 sm:mb-3">
-            Detection Radius
+          <label className="block text-white font-medium mb-3">
+            Alert Radius
           </label>
           <div className="relative">
             <input
               type="range"
               min="5"
-              max="500"
+              max="10000"
               step="5"
               value={detectionRadius}
               onChange={(e) => setDetectionRadius(parseInt(e.target.value))}
               className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
               style={{
-                background: `linear-gradient(to right, #FF7F00 0%, #FF7F00 ${
-                  ((detectionRadius - 5) / 495) * 100
-                }%, #4A4A4A ${
-                  ((detectionRadius - 5) / 495) * 100
-                }%, #4A4A4A 100%)`,
+                background: `linear-gradient(to right, #FF7F00 0%, #FF7F00 ${((detectionRadius - 5) / 9995) * 100}%, #4A4A4A ${((detectionRadius - 5) / 9995) * 100}%, #4A4A4A 100%)`
               }}
             />
             <div className="flex justify-between text-xs text-gray-400 mt-2">
               <span>5 km</span>
-              <span className="text-[#FF7F00] font-semibold">
-                {detectionRadius} km
-              </span>
-              <span>500 km</span>
+              <span className="text-[#FF7F00] font-semibold">{detectionRadius} km</span>
+              <span>10000 km</span>
             </div>
           </div>
         </div>
@@ -125,7 +198,7 @@ const AlertSettings = () => {
           onClick={handleSave}
           className="w-full bg-[#FF7F00] text-white py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-semibold hover:bg-[#FF8F20] transition-colors"
         >
-          Save Settings
+          Save Changes
         </button>
       </div>
     </div>

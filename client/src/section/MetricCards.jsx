@@ -1,11 +1,89 @@
 import React from "react";
 
-const MetricCards = () => {
+const MetricCards = ({ earthquakes = [] }) => {
+  const now = Date.now();
+  const oneHourAgo = now - (60 * 60 * 1000);
+  const twentyFourHoursAgo = now - (24 * 60 * 60 * 1000);
+  const sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000);
+
+  const getQuakeTimestamp = (quake) => {
+    if (typeof quake.timestamp === 'number') {
+      return quake.timestamp;
+    }
+    if (typeof quake.time === 'number') {
+      return quake.time;
+    }
+    if (quake.time || quake.timestamp) {
+      const parsed = new Date(quake.time || quake.timestamp).getTime();
+      if (!isNaN(parsed)) {
+        return parsed;
+      }
+    }
+    return 0;
+  };
+
+  const lastHour = earthquakes.filter(q => {
+    const quakeTime = getQuakeTimestamp(q);
+    return quakeTime >= oneHourAgo && quakeTime <= now;
+  });
+
+  const last24h = earthquakes.filter(q => {
+    const quakeTime = getQuakeTimestamp(q);
+    return quakeTime >= twentyFourHoursAgo && quakeTime <= now;
+  });
+
+  const last7Days = earthquakes.filter(q => {
+    const quakeTime = getQuakeTimestamp(q);
+    return quakeTime >= sevenDaysAgo && quakeTime <= now;
+  });
+
+  const calculateAverageMagnitude = (quakeList) => {
+    if (quakeList.length === 0) return '0.0';
+    const sum = quakeList.reduce((acc, q) => acc + parseFloat(q.magnitude || 0), 0);
+    return (sum / quakeList.length).toFixed(1);
+  };
+
+  const getLatestEarthquake = () => {
+    if (earthquakes.length === 0) return null;
+    const sorted = [...earthquakes].sort((a, b) => {
+      const timeA = getQuakeTimestamp(a);
+      const timeB = getQuakeTimestamp(b);
+      return timeB - timeA;
+    });
+    return sorted[0];
+  };
+
+  const formatTimeAgo = (timestamp) => {
+    const now = Date.now();
+    const quakeTime = typeof timestamp === 'number' ? timestamp : new Date(timestamp).getTime();
+    const diff = now - quakeTime;
+    
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes} min ago`;
+    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    return `${days} day${days > 1 ? 's' : ''} ago`;
+  };
+
+  const latestEarthquake = getLatestEarthquake();
+  const lastHourCount = lastHour.length;
+  const previousHourCount = earthquakes.filter(q => {
+    const quakeTime = getQuakeTimestamp(q);
+    const twoHoursAgo = now - (2 * 60 * 60 * 1000);
+    return quakeTime >= twoHoursAgo && quakeTime < oneHourAgo;
+  }).length;
+  const hourChange = lastHourCount - previousHourCount;
+
   const metrics = [
     {
-      title: "Active Events",
-      value: "12",
-      change: "+2 this hour",
+      title: "Active Events (24h)",
+      value: last24h.length.toString(),
+      change: hourChange >= 0 
+        ? `+${hourChange} this hour` 
+        : `${hourChange} this hour`,
       icon: (
         <svg
           className="w-8 h-8"
@@ -24,8 +102,8 @@ const MetricCards = () => {
     },
     {
       title: "Avg Magnitude",
-      value: "4.2",
-      change: "Last 24h",
+      value: calculateAverageMagnitude(last24h),
+      change: `Last 7 days: ${calculateAverageMagnitude(last7Days)}`,
       icon: (
         <svg
           className="w-8 h-8"
@@ -43,9 +121,9 @@ const MetricCards = () => {
       ),
     },
     {
-      title: "Alerts Sent",
-      value: "1,234",
-      change: "+45 today",
+      title: "High Magnitude (≥5.0)",
+      value: last24h.filter(q => parseFloat(q.magnitude || 0) >= 5.0).length.toString(),
+      change: `${last7Days.filter(q => parseFloat(q.magnitude || 0) >= 5.0).length} in last 7 days`,
       icon: (
         <svg
           className="w-8 h-8"
@@ -64,8 +142,8 @@ const MetricCards = () => {
     },
     {
       title: "Latest Event",
-      value: "2 min ago",
-      change: "Magnitude 3.8",
+      value: latestEarthquake ? formatTimeAgo(latestEarthquake.timestamp || latestEarthquake.time) : 'No data',
+      change: latestEarthquake ? `Magnitude ${parseFloat(latestEarthquake.magnitude || 0).toFixed(1)}` : '',
       icon: (
         <svg
           className="w-8 h-8"

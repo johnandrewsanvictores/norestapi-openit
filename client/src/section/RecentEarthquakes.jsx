@@ -1,32 +1,56 @@
 import React from "react";
 
-const RecentEarthquakes = () => {
-  const earthquakes = [
-    {
-      location: "San Francisco, CA",
-      magnitude: "5.2",
-      depth: "12.5 km",
-      time: "2 minutes ago",
-    },
-    {
-      location: "Los Angeles, CA",
-      magnitude: "3.8",
-      depth: "8.2 km",
-      time: "15 minutes ago",
-    },
-    {
-      location: "Fresno, CA",
-      magnitude: "2.9",
-      depth: "5.1 km",
-      time: "1 hour ago",
-    },
-    {
-      location: "San Jose, CA",
-      magnitude: "3.1",
-      depth: "9.8 km",
-      time: "2 hours ago",
-    },
-  ];
+const RecentEarthquakes = ({ earthquakes = [] }) => {
+  const getQuakeTimestamp = (quake) => {
+    if (typeof quake.timestamp === 'number') {
+      return quake.timestamp;
+    }
+    if (typeof quake.time === 'number') {
+      return quake.time;
+    }
+    if (quake.time || quake.timestamp) {
+      const parsed = new Date(quake.time || quake.timestamp).getTime();
+      if (!isNaN(parsed)) {
+        return parsed;
+      }
+    }
+    return 0;
+  };
+
+  const formatTimeAgo = (timestamp) => {
+    const now = Date.now();
+    const quakeTime = typeof timestamp === 'number' ? timestamp : new Date(timestamp).getTime();
+    const diff = now - quakeTime;
+    
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (seconds < 60) return 'Just now';
+    if (minutes < 60) return `${minutes} min ago`;
+    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    return `${days} day${days > 1 ? 's' : ''} ago`;
+  };
+
+  const getAlertLevel = (magnitude) => {
+    const mag = parseFloat(magnitude || 0);
+    if (mag >= 6.0) {
+      return 'bg-red-500';
+    } else if (mag >= 4.5) {
+      return 'bg-[#FF7F00]';
+    } else {
+      return 'bg-yellow-500';
+    }
+  };
+
+  const recentEarthquakes = [...earthquakes]
+    .sort((a, b) => {
+      const timeA = getQuakeTimestamp(a);
+      const timeB = getQuakeTimestamp(b);
+      return timeB - timeA;
+    })
+    .slice(0, 5);
 
   return (
     <div className="bg-[#2A2A2A] rounded-lg p-4 sm:p-6 border border-gray-800">
@@ -39,28 +63,40 @@ const RecentEarthquakes = () => {
         </p>
       </div>
 
-      <div className="space-y-3 sm:space-y-4">
-        {earthquakes.map((quake, index) => (
-          <div
-            key={index}
-            className="flex items-center justify-between py-3 sm:py-4 border-b border-gray-700 last:border-0"
-          >
-            <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
-              <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0"></div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm sm:text-base text-white font-medium truncate">
-                  {quake.location}
+      <div className="space-y-4">
+        {recentEarthquakes.length === 0 ? (
+          <div className="text-center py-8 text-gray-400">
+            <p>No recent earthquakes</p>
+          </div>
+        ) : (
+          recentEarthquakes.map((quake, index) => {
+            const magnitude = parseFloat(quake.magnitude || 0);
+            const depth = parseFloat(quake.depth || 0);
+            const timestamp = getQuakeTimestamp(quake);
+            
+            return (
+              <div key={`${quake.timestamp || quake.time}-${index}`} className="flex items-center justify-between py-4 border-b border-gray-700 last:border-0">
+                <div className="flex items-center space-x-3 flex-1">
+                  <div className={`w-2 h-2 ${getAlertLevel(magnitude)} rounded-full`}></div>
+                  <div>
+                    <div className="text-white font-medium">{quake.location || 'Unknown location'}</div>
+                    <div className="text-sm text-gray-400">
+                      Depth {depth.toFixed(1)} km • {formatTimeAgo(timestamp)}
+                      {quake.isSimulated && (
+                        <span className="ml-2 px-1.5 py-0.5 bg-yellow-600/30 border border-yellow-600/50 rounded text-xs text-yellow-300">
+                          SIMULATED
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="text-xs sm:text-sm text-gray-400">
-                  Depth {quake.depth} • {quake.time}
+                <div className="text-2xl font-bold text-[#FF7F00]">
+                  {magnitude.toFixed(1)}
                 </div>
               </div>
-            </div>
-            <div className="text-xl sm:text-2xl font-bold text-[#FF7F00] ml-2 flex-shrink-0">
-              {quake.magnitude}
-            </div>
-          </div>
-        ))}
+            );
+          })
+        )}
       </div>
     </div>
   );

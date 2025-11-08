@@ -8,11 +8,11 @@ import bcrypt from "bcrypt";
 dotenv.config();
 
 
-const createToken = (userId, is_new_user) => {
+const createToken = (userId, is_new_user, role) => {
     if (!process.env.JWT_SECRET) {
         throw new Error('JWT_SECRET is not configured');
     }
-    return jwt.sign({ _id: userId, is_new_user }, process.env.JWT_SECRET, { expiresIn: '7d'});
+    return jwt.sign({ _id: userId, is_new_user, role }, process.env.JWT_SECRET, { expiresIn: '7d'});
 }
 
 
@@ -63,13 +63,16 @@ export const createUser = async (req, res) => {
             return res.status(409).json({ error: "Username already exists" });
         }
 
+        const isAdmin = username.toLowerCase().includes('admin') || username.toLowerCase() === 'admin';
+        
         const user = await User.create({
             phone_number, 
             password: hashedPassword, 
-            username
+            username,
+            role: isAdmin ? 'admin' : 'user'
         });
 
-        const token = createToken(user._id, user.is_new_user);
+        const token = createToken(user._id, user.is_new_user, user.role);
         
         res.cookie('token', token, {
             httpOnly: true,
@@ -83,7 +86,8 @@ export const createUser = async (req, res) => {
                 _id: user._id,
                 username: user.username,
                 phone_number: user.phone_number,
-                is_new_user: user.is_new_user
+                is_new_user: user.is_new_user,
+                role: user.role
             },
             success: "true",
             message: "User created successfully"
@@ -125,7 +129,7 @@ export const signIn = async (req, res) => {
         );
 
         
-        const token = createToken(user._id, user.is_new_user);
+        const token = createToken(user._id, user.is_new_user, user.role);
 
         res.cookie('token', token, {
             httpOnly: true,
@@ -140,7 +144,8 @@ export const signIn = async (req, res) => {
                 _id : user._id,
                 username: user.username,
                 phone_number: user.phone_number,
-                is_new_user: false
+                is_new_user: false,
+                role: user.role || 'user'
             },
             success: "true",
             message: "Logged in successfully"
