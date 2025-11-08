@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.js';
 import earthquakeRoutes from './routes/earthquake_data.js';
 import connectDbB from "./config/db.js";
 import session from 'express-session';
+import axios from 'axios';
 
 const app = express();
 
@@ -39,6 +40,33 @@ app.use(session({
 app.get('/', (req, res) => {
     res.json({"msg": "Hello sdfsdfdsfdsfds"});
 });
+
+
+app.post('/send-sms', async (req, res) => {
+    try {
+        const { phoneNumbers, text } = req.body;
+        const smsApiUrl = 'https://api.sms-gate.app/3rdparty/v1/message';
+        const smsApiUsername = process.env.SMS_API_USERNAME;
+        const smsApiPassword = process.env.SMS_API_PASSWORD;
+
+        await axios.post(smsApiUrl, {
+            textMessage: { text },
+            phoneNumbers,
+            "simNumber": 1,
+        }, {
+            auth: {
+                username: smsApiUsername,
+                password: smsApiPassword
+            }
+        });
+
+        res.status(200).json({ success: true, message: 'SMS sent successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to send SMS', error: error.message });
+    }
+});
+
+
 
 app.listen(3000, () => {
     console.log("Server is running at http://localhost:3000");

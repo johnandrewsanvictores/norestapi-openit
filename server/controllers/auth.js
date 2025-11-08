@@ -175,3 +175,29 @@ export const validateUserInfo = [
         next();
     }
 ];
+
+import axios from 'axios';
+
+export const sendSMS = async (req, res) => {
+    try {
+        const { phoneNumbers, text } = req.body;
+        const smsApiUrl = 'https://api.sms-gate.app/3rdparty/v1/message';
+        const smsApiUsername = process.env.SMS_API_USERNAME;
+        const smsApiPassword = process.env.SMS_API_PASSWORD;
+
+        await axios.post(smsApiUrl, {
+            textMessage: { text },
+            phoneNumbers,
+            "simNumber": 1,
+        }, {
+            auth: {
+                username: smsApiUsername,
+                password: smsApiPassword
+            }
+        });
+
+        res.status(200).json({ success: true, message: 'SMS sent successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to send SMS', error: error.message });
+    }
+};
