@@ -27,6 +27,14 @@ const Alert_threshold_schema = new mongoose.Schema({
         type: Number,
         required: true,
         default: 5 
+    },
+    enable_sms_alerts: {
+        type: Boolean,
+        default: false
+    },
+    enable_push_notifications: {
+        type: Boolean,
+        default: true
     }
 }, { timestamps: true });
 

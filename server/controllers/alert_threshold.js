@@ -3,7 +3,7 @@ import Alert_threshold from '../models/Alert_threshold.js';
 export const add_alert_threshold = async (req, res) => {
     const currentUser = req.user;
     try {
-        const { latitude, longitude, minimum_magnitude, location_name, alert_radius } = req.body;
+        const { latitude, longitude, minimum_magnitude, location_name, alert_radius, enable_sms_alerts, enable_push_notifications } = req.body;
 
         if (!currentUser) {
             return res.status(401).json({ error: 'Unauthorized' });
@@ -15,7 +15,9 @@ export const add_alert_threshold = async (req, res) => {
             longitude,
             minimum_magnitude,
             location_name,
-            alert_radius
+            alert_radius,
+            enable_sms_alerts,
+            enable_push_notifications
         });
 
         res.status(201).json({
@@ -32,13 +34,13 @@ export const add_alert_threshold = async (req, res) => {
 export const update_alert_threshold = async (req, res) => {
     const currentUser = req.user;
     try {
-        const { latitude, longitude, minimum_magnitude, location_name, alert_radius } = req.body;
+        const { latitude, longitude, minimum_magnitude, location_name, alert_radius, enable_sms_alerts, enable_push_notifications } = req.body;
         if (!currentUser) {
             return res.status(401).json({ error: 'Unauthorized' });
         }  
         const alertThreshold = await Alert_threshold.findOneAndUpdate(
             { user_id: currentUser._id },
-            { latitude, longitude, minimum_magnitude, location_name, alert_radius },
+            { latitude, longitude, minimum_magnitude, location_name, alert_radius, enable_sms_alerts, enable_push_notifications },
             { new: true }
         );
         if (!alertThreshold) {
