@@ -8,7 +8,6 @@ const SeismicActivityChart = () => {
         <p className="text-sm text-gray-400">Earthquake magnitude distribution over time</p>
       </div>
 
-      {/* Placeholder for chart */}
       <div className="h-64 bg-[#1A1A1A] rounded-lg flex items-center justify-center border border-gray-700">
         <p className="text-gray-500 text-sm">Chart visualization will be displayed here</p>
       </div>

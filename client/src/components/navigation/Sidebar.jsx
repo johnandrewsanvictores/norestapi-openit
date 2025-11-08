@@ -39,10 +39,9 @@ const Sidebar = ({ isOpen = true, onToggle }) => {
         isOpen ? "translate-x-0" : "-translate-x-full"
       } lg:translate-x-0`}
     >
-      {/* Close button (mobile) */}
       <button
         className="lg:hidden absolute top-4 right-4 text-headingText"
-        onClick={() => onToggle ? onToggle() : null}
+        onClick={() => (onToggle ? onToggle() : null)}
       >
         <i className="fa-solid fa-xmark text-2xl"></i>
       </button>
@@ -82,7 +81,6 @@ const Sidebar = ({ isOpen = true, onToggle }) => {
         </nav>
       </div>
 
- 
       <div className="p-4 border-t border-gray-200">
         <button
           onClick={handleLogout}
@@ -97,4 +95,4 @@ const Sidebar = ({ isOpen = true, onToggle }) => {
   );
 };
 
-export default Sidebar; 
+export default Sidebar;
