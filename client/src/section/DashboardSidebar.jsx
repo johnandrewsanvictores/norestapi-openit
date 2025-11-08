@@ -1,18 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../../axios.js';
 import { showConfirmation, showSuccess } from '../utils/alertHelper.js';
+import { getUserLocationName } from '../utils/locationHelper.js';
 
 const DashboardSidebar = () => {
   const { setUser } = useAuth();
   const navigate = useNavigate();
   const [isProcessingLogout, setIsProcessingLogout] = useState(false);
+  const [userLocationName, setUserLocationName] = useState('Location not set');
   const getNavLinkClass = ({ isActive }) => {
     return isActive
       ? "flex items-center space-x-3 px-4 py-3 bg-[#FF7F00]/20 text-[#FF7F00] border-l-4 border-[#FF7F00] transition-colors"
       : "flex items-center space-x-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition-colors";
   };
+
+  useEffect(() => {
+    const updateLocationName = () => {
+      const locationName = getUserLocationName();
+      setUserLocationName(locationName);
+    };
+    
+    updateLocationName();
+    
+    const handleLocationUpdate = () => {
+      updateLocationName();
+    };
+    
+    const handleStorageChange = () => {
+      updateLocationName();
+    };
+    
+    window.addEventListener('locationUpdated', handleLocationUpdate);
+    window.addEventListener('storage', handleStorageChange);
+    
+    const interval = setInterval(updateLocationName, 2000);
+    
+    return () => {
+      window.removeEventListener('locationUpdated', handleLocationUpdate);
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -25,12 +55,39 @@ const DashboardSidebar = () => {
       if (!confirmed) return;
 
       setIsProcessingLogout(true);
-      const res = await api.post("/auth/logout");
-      setUser(null);
-      showSuccess(res.data.message);
-      navigate("/");
+      
+      try {
+        const res = await api.post("/auth/logout", {}, { withCredentials: true });
+        
+        setUser(null);
+        
+        localStorage.removeItem('userLocation');
+        localStorage.removeItem('locationPermission');
+        localStorage.removeItem('alertSettings');
+        
+        if (res.data && res.data.message) {
+          showSuccess(res.data.message);
+        } else {
+          showSuccess("Logged out successfully");
+        }
+        
+        navigate("/");
+      } catch (error) {
+        console.error("Logout error:", error);
+        
+        setUser(null);
+        localStorage.removeItem('userLocation');
+        localStorage.removeItem('locationPermission');
+        localStorage.removeItem('alertSettings');
+        
+        navigate("/");
+        
+        if (error.response && error.response.data && error.response.data.error) {
+          alert(`Logout error: ${error.response.data.error}`);
+        }
+      }
     } catch (error) {
-      console.error("Logout failed", error);
+      console.error("Confirmation error:", error);
     } finally {
       setIsProcessingLogout(false);
     }
@@ -54,7 +111,7 @@ const DashboardSidebar = () => {
           <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
           </svg>
-          <span className="text-white font-medium">San Francisco, CA</span>
+          <span className="text-white font-medium text-sm">{userLocationName}</span>
         </div>
       </div>
 

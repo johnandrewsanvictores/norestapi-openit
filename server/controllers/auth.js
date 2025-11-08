@@ -8,8 +8,11 @@ import bcrypt from "bcrypt";
 dotenv.config();
 
 
-const createToken = (userId, phone_number, is_new_user) => {
-    return jwt.sign({ _id: userId, phone_number, is_new_user },  process.env.JWT_SECRET, { expiresIn: '7d'});
+const createToken = (userId, is_new_user) => {
+    if (!process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET is not configured');
+    }
+    return jwt.sign({ _id: userId, is_new_user }, process.env.JWT_SECRET, { expiresIn: '7d'});
 }
 
 
@@ -21,14 +24,27 @@ export const getUser = (req, res) => {
 }
 
 
-//logout controller without passport
 export const logout = (req, res) => {
-    res.clearCookie('token', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-    });
-    res.json({ message: 'Logged out successfully' });
+    try {
+        // Clear the token cookie with proper settings
+        res.clearCookie('token', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+            path: '/',
+        });
+        
+        res.status(200).json({ 
+            success: true,
+            message: 'Logged out successfully' 
+        });
+    } catch (error) {
+        console.error('Logout error:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Failed to logout' 
+        });
+    }
 }
 
 
@@ -36,22 +52,26 @@ export const createUser = async (req, res) => {
     try {
         const {phone_number, password, username} = req.body;
 
-        const hashedPassword = await hashPassword(password);
-
-        const users = await User.findOne({
-            $or: [
-                {username}
-            ]
-        })
-
-        if (users) {
-            if (users.username === username) {
-                return res.status(409).json({ error: "Username already exists" });
-            }
+        if (!username || !password || !phone_number) {
+            return res.status(400).json({ error: 'Username, password, and phone number are required' });
         }
 
-        const user = await User.create({phone_number, password: hashedPassword, username});
-        const token = createToken(user._id, user.phone_numer);
+        const hashedPassword = await hashPassword(password);
+
+        const existingUser = await User.findOne({ username });
+
+        if (existingUser) {
+            return res.status(409).json({ error: "Username already exists" });
+        }
+
+        const user = await User.create({
+            phone_number, 
+            password: hashedPassword, 
+            username
+        });
+
+        const token = createToken(user._id, user.is_new_user);
+        
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -61,15 +81,30 @@ export const createUser = async (req, res) => {
 
         res.status(201).json({
             user: {
-                _id : user._id,
+                _id: user._id,
                 username: user.username,
-                phone_number: user.phone_number,        
-        },
+                phone_number: user.phone_number,
+                is_new_user: user.is_new_user
+            },
             success: "true",
             message: "User created successfully"
         });
     } catch(error) {
-        res.status(500).json({ message: 'Server error', error: err.message });
+        console.error('Create user error:', error);
+        
+        // Handle specific MongoDB errors
+        if (error.code === 11000) {
+            return res.status(409).json({ error: 'Username already exists' });
+        }
+        
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({ error: Object.values(error.errors).map(e => e.message).join(', ') });
+        }
+        
+        res.status(500).json({ 
+            error: 'Server error', 
+            message: error.message 
+        });
     }
 }
 
@@ -92,7 +127,7 @@ export const signIn = async (req, res) => {
         );
 
         
-        const token = createToken(user._id, user.role, user.is_new_user);
+        const token = createToken(user._id, user.is_new_user);
 
         res.cookie('token', token, {
             httpOnly: true,
@@ -162,8 +197,8 @@ export const getSpecificUser = async (req, res) => {
 
 export const validateUserInfo = [
     body('username').trim().isLength({ min: 6}).withMessage('Username must be at least 6 characters'),
-    body('password').trim().isLength({ min: 8}).withMessage('Password must be at least 8 characters'),
-    body('phone_number').trim().isLength({ min: 11, max: 11 }).withMessage('Phone number must be 11 digits only'),
+    body('password').trim().isLength({ min: 6}).withMessage('Password must be at least 6 characters'),
+    body('phone_number').trim().isLength({ min: 10, max: 15 }).withMessage('Phone number must be between 10 and 15 digits'),  
     (req, res, next) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {

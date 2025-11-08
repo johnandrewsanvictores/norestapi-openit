@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import DashboardSidebar from '../section/DashboardSidebar';
 import MetricCards from '../section/MetricCards';
 import RecentEarthquakes from '../section/RecentEarthquakes';
@@ -8,39 +8,60 @@ import EarthquakeAlertModal from '../components/modals/EarthquakeAlertModal';
 import EarthquakeDetailsModal from '../components/modals/EarthquakeDetailsModal';
 import { useEarthquakeAlert } from '../context/EarthquakeAlertContext';
 import { useEarthquakeMonitor } from '../hooks/useEarthquakeMonitor';
+import api from '../../axios.js';
 
 const Dashboard = () => {
   const { alertEarthquake, isAlertOpen, closeAlert, setViewMapHandler, handleViewMap } = useEarthquakeAlert();
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedEarthquake, setSelectedEarthquake] = useState(null);
+  const [earthquakes, setEarthquakes] = useState([]);
 
-  // Sample earthquakes data - in a real app, this would come from an API
-  // Using useMemo to prevent recreation on every render
-  const sampleEarthquakes = useMemo(() => [
-    {
-      magnitude: "5.2",
-      location: "San Francisco, CA",
-      depth: "12.5",
-      time: "2 minutes ago",
-      alertLevel: "ALERT",
-      alertColor: "text-red-500",
-      bgColor: "bg-red-500/20"
-    },
-    {
-      magnitude: "3.8",
-      location: "Los Angeles, CA",
-      depth: "8.2",
-      time: "15 minutes ago",
-      alertLevel: "WARNING",
-      alertColor: "text-[#FF7F00]",
-      bgColor: "bg-[#FF7F00]/20"
-    }
-  ], []);
+  useEffect(() => {
+    const fetchEarthquakes = async () => {
+      try {
+        const today = new Date();
+        const oneYearAgo = new Date();
+        oneYearAgo.setFullYear(today.getFullYear() - 1);
+        
+        const formatDate = (date) => {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        };
 
-  // Monitor earthquakes and trigger alerts
-  useEarthquakeMonitor(sampleEarthquakes);
+        const response = await api.get('/earthquake/philippines', {
+          params: {
+            starttime: formatDate(oneYearAgo),
+            endtime: formatDate(today),
+            minMag: 3
+          }
+        });
 
-  // Set up view map handler to open earthquake details modal
+        const transformedData = response.data.map((quake) => ({
+          magnitude: quake.magnitude?.toString() || '0.0',
+          location: quake.place || 'Unknown location',
+          latitude: quake.latitude,
+          longitude: quake.longitude,
+          depth: quake.depth?.toString() || '0.0',
+          time: quake.time,
+          timestamp: quake.time
+        }));
+
+        setEarthquakes(transformedData);
+      } catch (error) {
+        console.error('Error fetching earthquakes for monitoring:', error);
+      }
+    };
+
+    fetchEarthquakes();
+    
+    const interval = setInterval(fetchEarthquakes, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEarthquakeMonitor(earthquakes);
+
   const viewMapHandler = useCallback((earthquake) => {
     if (earthquake) {
       setSelectedEarthquake(earthquake);
@@ -87,7 +108,6 @@ const Dashboard = () => {
         <SeismicActivityChart />
       </div>
 
-      {/* Earthquake Alert Modal */}
       <EarthquakeAlertModal
         isOpen={isAlertOpen}
         onClose={closeAlert}
@@ -95,7 +115,6 @@ const Dashboard = () => {
         onViewMap={handleViewMap}
       />
 
-      {/* Earthquake Details Modal (for map view) */}
       <EarthquakeDetailsModal
         isOpen={isDetailsModalOpen}
         onClose={handleCloseDetailsModal}

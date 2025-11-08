@@ -1,8 +1,9 @@
 import mongoose from 'mongoose';
+import { Timestamp } from 'mongodb';
 
 const earthquakeSchema = new mongoose.Schema({
-    timestamp: {
-        type: Date,
+    time: {
+        type: Timestamp,
         required: true
     },
     latitude: {
@@ -17,17 +18,21 @@ const earthquakeSchema = new mongoose.Schema({
         type: Number,
         required: true,
     },
-    mag: {
+    magnitude: {
         type: Number,
         required: true,
     },
-    location: {
+    place: {
         type: String,
         required: true
     },
-    expected_aftershock: {
+    tsunami: {
         type: Boolean,
         default: false
+    },
+    magnitude_type: {
+        type: String,
+        required: true
     }
 }, { timestamps: true });
 

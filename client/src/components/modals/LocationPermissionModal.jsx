@@ -17,15 +17,26 @@ const LocationPermissionModal = ({ isOpen, onClose }) => {
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const locationData = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
           timestamp: new Date().toISOString()
         };
         
+        try {
+          const { getLocationName } = await import('../../utils/locationHelper.js');
+          const locationName = getLocationName(locationData.latitude, locationData.longitude);
+          locationData.locationName = locationName;
+        } catch (error) {
+          console.error('Error getting location name:', error);
+          locationData.locationName = `${locationData.latitude.toFixed(4)}, ${locationData.longitude.toFixed(4)}`;
+        }
+        
         localStorage.setItem('locationPermission', 'granted');
         localStorage.setItem('userLocation', JSON.stringify(locationData));
+        
+        window.dispatchEvent(new Event('locationUpdated'));
         
         setIsRequesting(false);
         onClose();
