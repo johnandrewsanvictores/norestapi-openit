@@ -194,22 +194,24 @@ const EarthquakeFeedList = () => {
             onClick={() => handleEarthquakeClick(quake)}
             className="bg-[#2A2A2A] rounded-lg p-4 sm:p-6 border border-gray-800 hover:border-gray-700 transition-colors cursor-pointer"
           >
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-lg font-bold text-white">
-                  Magnitude {quake.magnitude} Earthquake
-                </h3>
-                {quake.isSimulated && (
-                  <span className="px-2 py-0.5 bg-yellow-600/30 border border-yellow-600/50 rounded text-xs text-yellow-300 font-semibold">
-                    SIMULATED
-                  </span>
-                )}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <h3 className="text-lg font-bold text-white">
+                    Magnitude {quake.magnitude} Earthquake
+                  </h3>
+                  {quake.isSimulated && (
+                    <span className="px-2 py-1 bg-yellow-500/90 border border-yellow-400 rounded text-xs text-white font-bold uppercase tracking-wide whitespace-nowrap">
+                      SIMULATED
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-400 mb-1">{quake.location}</p>
+                <p className="text-xs text-gray-500">{quake.time}</p>
               </div>
-              <p className="text-sm text-gray-400 mb-1">{quake.location}</p>
-              <p className="text-xs text-gray-500">{quake.time}</p>
-            </div>
-            <div className={`ml-4 px-4 py-2 rounded-lg font-bold text-sm uppercase ${quake.alertColor} ${quake.bgColor}`}>
-              {quake.alertLevel}
+              <div className={`px-4 py-2 rounded-lg font-bold text-sm uppercase ${quake.alertColor} ${quake.bgColor} whitespace-nowrap`}>
+                {quake.alertLevel}
+              </div>
             </div>
           </div>
         ))}

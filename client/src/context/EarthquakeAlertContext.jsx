@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { shouldShowAlert, getCoordinatesFromLocation } from '../utils/earthquakeAlert';
+import { saveAlertToCache } from '../utils/cacheHelper';
 import api from '../../axios';
 
 const EarthquakeAlertContext = createContext();
@@ -18,17 +19,20 @@ export const EarthquakeAlertProvider = ({ children }) => {
   const viewMapCallbackRef = useRef(null);
 
   const checkAndShowAlert = useCallback(async (earthquake) => {
-    // Show alert to user
+    
+    saveAlertToCache(earthquake);
+    
+    
     setAlertEarthquake(earthquake);
     setIsAlertOpen(true);
 
-    // Notify all users in range via SMS
+    
     try {
-      // Get current user's alert settings from localStorage
+      
       const alertSettings = JSON.parse(localStorage.getItem('alertSettings') || '{}');
       const userLocation = JSON.parse(localStorage.getItem('userLocation') || 'null');
       
-      // Get coordinates for user's alert location
+      
       let userAlertLat = null;
       let userAlertLon = null;
       
@@ -48,13 +52,13 @@ export const EarthquakeAlertProvider = ({ children }) => {
         location: earthquake.location,
         depth: earthquake.depth,
         time: earthquake.timestamp || earthquake.time,
-        // Include current user's alert settings if available
+        
         currentUserSettings: (userAlertLat && userAlertLon) ? {
           latitude: userAlertLat,
           longitude: userAlertLon,
           minimum_magnitude: parseFloat(alertSettings.minMagnitude || 3.0),
           alert_radius: parseFloat(alertSettings.alertRadius || 100),
-          enable_sms_alerts: true // Default to true if user is being alerted
+          enable_sms_alerts: true 
         } : null
       };
 
@@ -65,7 +69,7 @@ export const EarthquakeAlertProvider = ({ children }) => {
       console.log('SMS notifications sent to users in range');
     } catch (error) {
       console.error('Error sending SMS notifications:', error);
-      // Don't block the alert if SMS fails
+      
     }
 
     return true;

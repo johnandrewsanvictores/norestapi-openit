@@ -110,6 +110,22 @@ safety_guide: [
 app.get('/pollination-safety-guide', async (req, res) => {
     try {
                 const { place, coordinates } = req.query;
+                
+                // Handle coordinates - they might come as coordinates[0] and coordinates[1] or as an array
+                let coordArray = [];
+                if (Array.isArray(coordinates)) {
+                    coordArray = coordinates;
+                } else if (coordinates) {
+                    coordArray = [coordinates];
+                } else if (req.query['coordinates[0]'] && req.query['coordinates[1]']) {
+                    coordArray = [req.query['coordinates[0]'], req.query['coordinates[1]']];
+                } else {
+                    coordArray = ['121.0', '12.0']; // Default to Manila, Philippines
+                }
+                
+                const coord0 = coordArray[0] || '121.0';
+                const coord1 = coordArray[1] || '12.0';
+                
                 const prompt = `analyze the area_type of the given location of earthquakes with coordinates below,with x kilometer away from with direction like identify what type of location like "88 km NE of Dicabisagan, Philippines"   and return me the earthquake safety guide in the json format like below based on the earthquake proximity for example if near in coastal then evauate to the high lands. In generating safety guides follow the RULES  below.
 
                 RULES:
@@ -129,8 +145,8 @@ app.get('/pollination-safety-guide', async (req, res) => {
 
                 given:
                 {
-                place: "${place}",
-                coordinates: ["${coordinates[0]}", "${coordinates[1]}"]
+                place: "${place || 'Unknown location'}",
+                coordinates: ["${coord0}", "${coord1}"]
                 }   
                 output (json only) formmated in this format only  nothing more, do that in one line without "\\n" or new line, safety guide is array with multiple items:
                 {

@@ -11,37 +11,37 @@ import axios from 'axios';
 const normalizePhoneNumber = (phoneNumber) => {
   if (!phoneNumber) return null;
   
-  // Remove all non-digit characters except +
+  
   let cleaned = phoneNumber.replace(/[^\d+]/g, '');
   
-  // If already starts with +, keep it
+  
   if (cleaned.startsWith('+')) {
     return cleaned;
   }
   
-  // If starts with 0, replace with country code (Philippines: +63)
+  
   if (cleaned.startsWith('0')) {
     return '+63' + cleaned.substring(1);
   }
   
-  // If starts with 63 (without +), add +
+  
   if (cleaned.startsWith('63')) {
     return '+' + cleaned;
   }
   
-  // If it's a 10-digit number (Philippines mobile), add +63
+  
   if (cleaned.length === 10 && cleaned.startsWith('9')) {
     return '+63' + cleaned;
   }
   
-  // If it's an 11-digit number starting with 0, replace 0 with +63
+  
   if (cleaned.length === 11 && cleaned.startsWith('0')) {
     return '+63' + cleaned.substring(1);
   }
   
-  // Default: assume it's a Philippines number and add +63
+  
   if (cleaned.length >= 10) {
-    // Remove leading 0 if present
+    
     if (cleaned.startsWith('0')) {
       cleaned = cleaned.substring(1);
     }
@@ -69,13 +69,13 @@ export const notifyUsersInRange = async (req, res) => {
     const earthquakeLon = parseFloat(longitude);
     const earthquakeMagnitude = parseFloat(magnitude);
 
-    // Get all users with alert thresholds
+    
     const alertThresholds = await Alert_threshold.find({ 
       enable_sms_alerts: true 
     }).populate('user_id', 'phone_number username');
 
     const usersInRange = [];
-    const phoneNumbers = new Set(); // Use Set to avoid duplicates
+    const phoneNumbers = new Set(); 
 
     // Check current user's settings if provided (from localStorage)
     if (currentUserSettings && currentUserSettings.latitude && currentUserSettings.longitude) {

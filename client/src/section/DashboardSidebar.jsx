@@ -100,7 +100,7 @@ const DashboardSidebar = () => {
           <svg className="w-6 h-6 text-[#FF7F00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
-          <h1 className="text-2xl font-bold text-white">SeismoAlert</h1>
+          <h1 className="text-2xl font-bold text-white">Alertify</h1>
         </div>
         <p className="text-sm text-gray-400">Early warning system</p>
       </div>
