@@ -7,7 +7,11 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
   const mapRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
 
-  const getCoordinates = (location) => {
+  const getCoordinates = (earthquake) => {
+    if (earthquake.longitude && earthquake.latitude) {
+      return [earthquake.longitude, earthquake.latitude];
+    }
+    
     const locationMap = {
       'Pacific Ocean, 45km west of San Francisco': [-122.8, 37.7],
       'East Bay Hills, California': [-122.2, 37.8],
@@ -18,13 +22,14 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
       'San Jose, CA': [-121.8863, 37.3382]
     };
     
+    const location = earthquake.location || '';
     for (const [key, coords] of Object.entries(locationMap)) {
       if (location.includes(key.split(',')[0]) || key.includes(location.split(',')[0])) {
         return coords;
       }
     }
     
-    return [-122.4194, 37.7749];
+    return [121.0, 12.0];
   };
 
   useEffect(() => {
@@ -45,7 +50,7 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
       mapRef.current = null;
     }
 
-    const coordinates = getCoordinates(earthquake.location);
+    const coordinates = getCoordinates(earthquake);
     const mapId = `earthquake-map-${Date.now()}`;
 
     if (mapContainerRef.current) {

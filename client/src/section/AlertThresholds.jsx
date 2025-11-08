@@ -1,51 +1,117 @@
 import React, { useState, useEffect } from 'react';
+import { getUserCountry, getLocationsByCountry } from '../utils/locationData.js';
+import { getUserLocationName } from '../utils/locationHelper.js';
+import { showSuccess, showError } from '../utils/alertHelper.js';
 
 const AlertThresholds = () => {
   const [minMagnitude, setMinMagnitude] = useState('3.0');
   const [alertRadius, setAlertRadius] = useState('100');
-  const [location, setLocation] = useState('San Francisco, CA');
+  const [location, setLocation] = useState('');
+  const [locations, setLocations] = useState([]);
 
-  // Load settings from localStorage on mount
+  // Load settings and detect country on mount
   useEffect(() => {
     try {
+      // Get user's country and load appropriate locations
+      const userCountry = getUserCountry();
+      const countryLocations = getLocationsByCountry(userCountry);
+      setLocations(countryLocations);
+
+      // Load saved settings from localStorage
       const settings = localStorage.getItem('alertSettings');
       if (settings) {
         const parsed = JSON.parse(settings);
         setMinMagnitude(parsed.minMagnitude?.toString() || '3.0');
         setAlertRadius(parsed.alertRadius?.toString() || '100');
+        
+        // Set location if saved, otherwise use user's current location
+        if (parsed.location && countryLocations.includes(parsed.location)) {
+          setLocation(parsed.location);
+        } else {
+          // Try to use user's current location name
+          const userLocationName = getUserLocationName();
+          if (userLocationName && userLocationName !== 'Location not set') {
+            // Check if user location is in the list
+            const matchingLocation = countryLocations.find(loc => 
+              userLocationName.includes(loc.split(',')[0]) || 
+              loc.includes(userLocationName.split(',')[0])
+            );
+            if (matchingLocation) {
+              setLocation(matchingLocation);
+            } else if (countryLocations.length > 0) {
+              // Default to first location in list
+              setLocation(countryLocations[0]);
+            }
+          } else if (countryLocations.length > 0) {
+            setLocation(countryLocations[0]);
+          }
+        }
+      } else {
+        // No saved settings, use defaults
+        const userLocationName = getUserLocationName();
+        if (userLocationName && userLocationName !== 'Location not set') {
+          const matchingLocation = countryLocations.find(loc => 
+            userLocationName.includes(loc.split(',')[0]) || 
+            loc.includes(userLocationName.split(',')[0])
+          );
+          if (matchingLocation) {
+            setLocation(matchingLocation);
+          } else if (countryLocations.length > 0) {
+            setLocation(countryLocations[0]);
+          }
+        } else if (countryLocations.length > 0) {
+          setLocation(countryLocations[0]);
+        }
       }
     } catch (error) {
       console.error('Error loading alert settings:', error);
+      // Set default locations
+      const userCountry = getUserCountry();
+      const defaultLocations = getLocationsByCountry(userCountry);
+      setLocations(defaultLocations);
+      if (defaultLocations.length > 0) {
+        setLocation(defaultLocations[0]);
+      }
     }
   }, []);
 
-  const locations = [
-    'San Francisco, CA',
-    'Los Angeles, CA',
-    'San Diego, CA',
-    'San Jose, CA',
-    'Fresno, CA',
-    'Sacramento, CA',
-    'Oakland, CA',
-    'Long Beach, CA',
-    'Bakersfield, CA',
-    'Anaheim, CA'
-  ];
-
   const handleSave = () => {
+    // Validate inputs
+    const magnitude = parseFloat(minMagnitude);
+    const radius = parseFloat(alertRadius);
+    
+    if (isNaN(magnitude) || magnitude < 0 || magnitude > 10) {
+      showError('Minimum magnitude must be between 0 and 10');
+      return;
+    }
+    
+    if (isNaN(radius) || radius < 0 || radius > 10000) {
+      showError('Alert radius must be between 0 and 10000 km');
+      return;
+    }
+    
+    if (!location) {
+      showError('Please select a location');
+      return;
+    }
+    
     const settings = {
-      minMagnitude: parseFloat(minMagnitude) || 3.0,
-      alertRadius: parseFloat(alertRadius) || 100,
+      minMagnitude: magnitude,
+      alertRadius: radius,
       location: location
     };
     
     try {
       localStorage.setItem('alertSettings', JSON.stringify(settings));
       console.log('Alert thresholds saved:', settings);
-      alert('Alert settings saved successfully!');
+      
+      // Dispatch event to notify other components
+      window.dispatchEvent(new Event('alertSettingsUpdated'));
+      
+      showSuccess('Alert settings saved successfully!');
     } catch (error) {
       console.error('Error saving alert settings:', error);
-      alert('Error saving settings. Please try again.');
+      showError('Error saving settings. Please try again.');
     }
   };
 

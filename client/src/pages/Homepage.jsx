@@ -175,6 +175,7 @@ function Homepage() {
         isOpen={isSignInModalOpen}
         onClose={handleCloseModals}
         onSwitchToSignUp={handleSwitchToSignUp}
+        onLocationPermissionRequest={handleLocationPermissionRequest}
       />
 
       <SignUpModal

@@ -69,7 +69,7 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToSignIn, onLocationPermissionRe
         "/auth/signup",
         {
           username: formData.username,
-          phoneNumber: formData.phoneNumber,
+          phone_number: formData.phoneNumber,
           password: formData.password,
         },
         { withCredentials: true }
@@ -89,12 +89,19 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToSignIn, onLocationPermissionRe
         navigate("/decide-user-type");
       }
     } catch (error) {
-      if (error.response && error.response.status === 400) {
-        setError(
-          error.response.data.error || "Make sure all fields are valid"
-        );
+      if (error.response) {
+        const status = error.response.status;
+        const errorData = error.response.data;
+        
+        if (status === 400 || status === 409) {
+          setError(errorData.error || errorData.message || "Make sure all fields are valid");
+        } else if (status === 500) {
+          setError(errorData.error || errorData.message || "Server error. Please try again.");
+        } else {
+          setError("An error occurred during registration. Please try again.");
+        }
       } else {
-        setError("An error occurred during registration. Please try again.");
+        setError("Network error. Please check your connection and try again.");
       }
     }
 

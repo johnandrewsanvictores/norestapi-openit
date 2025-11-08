@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../../../axios.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 
-const SignInModal = ({ isOpen, onClose, onSwitchToSignUp }) => {
+const SignInModal = ({ isOpen, onClose, onSwitchToSignUp, onLocationPermissionRequest }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: "",
@@ -14,7 +14,6 @@ const SignInModal = ({ isOpen, onClose, onSwitchToSignUp }) => {
 
   const { user, setUser } = useAuth();
 
-  // Reset form when modal closes
   const resetForm = () => {
     setFormData({
       username: "",
@@ -24,7 +23,6 @@ const SignInModal = ({ isOpen, onClose, onSwitchToSignUp }) => {
     setIsLoading(false);
   };
 
-  // Clear form data when modal closes
   useEffect(() => {
     if (!isOpen) {
       resetForm();
@@ -50,6 +48,22 @@ const SignInModal = ({ isOpen, onClose, onSwitchToSignUp }) => {
     if (error) setError("");
   };
 
+  // Check if location is set
+  const checkLocation = () => {
+    try {
+      const locationData = localStorage.getItem('userLocation');
+      if (locationData) {
+        const location = JSON.parse(locationData);
+        if (location.latitude && location.longitude) {
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking location:', error);
+    }
+    return false;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -59,7 +73,7 @@ const SignInModal = ({ isOpen, onClose, onSwitchToSignUp }) => {
       const res = await api.post("/auth/signin", {
         username: formData.username,
         password: formData.password,
-      });
+      }, { withCredentials: true });
 
       const data = res.data;
 
@@ -68,22 +82,72 @@ const SignInModal = ({ isOpen, onClose, onSwitchToSignUp }) => {
 
       resetForm();
       onClose();
-      if (!data.user.barangayId && data.user.role === "public_user") {
-        navigate("/decide-user-type");
-      } else {
-        if(data.user.role === "public_user") {
-          navigate("/dashboard");
-        }else if(data.user.role === "barangay"){
-          navigate("/barangay-dashboard")
-        }else if(data.user.role === "municipality"){
-          navigate("/municipality-dashboard");
+      
+      const hasLocation = checkLocation();
+      
+      if (!hasLocation) {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const locationData = {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                timestamp: new Date().toISOString()
+              };
+              
+              try {
+                const { getLocationName } = await import('../../utils/locationHelper.js');
+                const locationName = getLocationName(locationData.latitude, locationData.longitude);
+                locationData.locationName = locationName;
+              } catch (error) {
+                console.error('Error getting location name:', error);
+                locationData.locationName = `${locationData.latitude.toFixed(4)}, ${locationData.longitude.toFixed(4)}`;
+              }
+              
+              localStorage.setItem('locationPermission', 'granted');
+              localStorage.setItem('userLocation', JSON.stringify(locationData));
+              window.dispatchEvent(new Event('locationUpdated'));
+              
+              navigate("/dashboard");
+            },
+            (error) => {
+              if (onLocationPermissionRequest) {
+                onLocationPermissionRequest();
+              } else {
+                console.warn('Location permission not available:', error);
+                navigate("/dashboard");
+              }
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 5000,
+              maximumAge: 0
+            }
+          );
+        } else {
+          if (onLocationPermissionRequest) {
+            onLocationPermissionRequest();
+          } else {
+            navigate("/dashboard");
+          }
         }
+      } else {
+        navigate("/dashboard");
       }
     } catch (error) {
-      if (error.response && error.response.status === 400) {
-        setError(error.response.data.error || "Invalid credentials");
+      if (error.response) {
+        const status = error.response.status;
+        const errorData = error.response.data;
+        
+        if (status === 400 || status === 401) {
+          setError(errorData.error || "Invalid credentials");
+        } else if (status === 500) {
+          setError(errorData.error || errorData.message || "Server error. Please try again.");
+        } else {
+          setError("An error occurred during sign in. Please try again.");
+        }
       } else {
-        setError("An error occurred during sign in. Please try again.");
+        setError("Network error. Please check your connection and try again.");
       }
     }
 
@@ -102,7 +166,6 @@ const SignInModal = ({ isOpen, onClose, onSwitchToSignUp }) => {
           ×
         </button>
 
-        {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-8 h-8 flex items-center justify-center">
@@ -115,7 +178,6 @@ const SignInModal = ({ isOpen, onClose, onSwitchToSignUp }) => {
           <p className="text-gray-400 text-sm ml-11">Real-time earthquake monitoring</p>
         </div>
 
-        {/* Form */}
         <div className="mb-4">
           <h3 className="text-xl font-bold text-white mb-2">Sign In</h3>
           <p className="text-gray-400 text-sm mb-5">Enter your credentials to access your account</p>
@@ -169,7 +231,6 @@ const SignInModal = ({ isOpen, onClose, onSwitchToSignUp }) => {
           </form>
         </div>
 
-        {/* Navigation Link */}
         <div className="text-center mb-4">
           <p className="text-gray-400 text-sm">
             Don't have an account?{" "}
@@ -182,7 +243,6 @@ const SignInModal = ({ isOpen, onClose, onSwitchToSignUp }) => {
           </p>
         </div>
 
-        {/* Disclaimer */}
         <p className="text-gray-500 text-xs text-center">
           By signing in, you agree to our Terms of Service and Privacy Policy
         </p>
