@@ -5,13 +5,11 @@ import {
     logout,
     signIn,
     validateUserInfo,
-    getPhilippinesEarthquakeData
 } from "../controllers/auth.js";
 import auth from "../middleware/auth.js";
 
 
 const router = express.Router();
-router.get('/philippines', getPhilippinesEarthquakeData);
 router.get("/me", getUser);
 router.post("/logout", logout);
 router.post("/signin", signIn);

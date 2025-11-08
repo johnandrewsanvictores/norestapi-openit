@@ -22,7 +22,7 @@ app.use(cors({
 }));
 
 app.use("/auth", authRoutes);
-app.get("/earthquake",  earthquakeRoutes)
+app.use("/earthquake",  earthquakeRoutes)
 
 app.use(session({
     secret: process.env.SESSION_SECRET,
