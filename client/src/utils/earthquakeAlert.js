@@ -55,7 +55,7 @@ export const getAlertSettings = () => {
  * @returns {Array} [longitude, latitude]
  */
 export const getCoordinatesFromLocation = (location) => {
-  // Philippines locations
+  
   const philippinesMap = {
     'Manila, Philippines': [120.9842, 14.5995],
     'Quezon City, Philippines': [121.0437, 14.6760],
@@ -99,7 +99,7 @@ export const getCoordinatesFromLocation = (location) => {
     'Malolos, Philippines': [120.8111, 14.8431]
   };
   
-  // USA locations (for reference)
+  
   const usaMap = {
     'San Francisco, CA': [-122.4194, 37.7749],
     'Los Angeles, CA': [-118.2437, 34.0522],
@@ -113,15 +113,15 @@ export const getCoordinatesFromLocation = (location) => {
     'Anaheim, CA': [-117.9143, 33.8353]
   };
   
-  // Combine all location maps
+  
   const locationMap = { ...philippinesMap, ...usaMap };
   
-  // Try exact match first
+  
   if (locationMap[location]) {
     return locationMap[location];
   }
   
-  // Try partial match
+  
   for (const [key, coords] of Object.entries(locationMap)) {
     const keyCity = key.split(',')[0].trim();
     const locationCity = location.split(',')[0].trim();
@@ -132,7 +132,7 @@ export const getCoordinatesFromLocation = (location) => {
     }
   }
   
-  // Default to Manila, Philippines if no match
+  
   return [120.9842, 14.5995];
 };
 
@@ -153,7 +153,7 @@ export const shouldShowAlert = (earthquake) => {
     return false;
   }
 
-  // Get earthquake coordinates
+  
   let earthquakeLat, earthquakeLon;
   
   if (earthquake.latitude && earthquake.longitude) {

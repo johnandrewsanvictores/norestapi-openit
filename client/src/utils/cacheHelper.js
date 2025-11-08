@@ -1,6 +1,3 @@
-/**
- * Cache helper for storing earthquake alerts and safety guidelines
- */
 
 const CACHE_KEYS = {
   RECENT_ALERTS: 'earthquake_recent_alerts',
@@ -9,10 +6,7 @@ const CACHE_KEYS = {
   MAX_GUIDES: 100
 };
 
-/**
- * Get recent earthquake alerts from cache
- * @returns {Array} Array of recent alerts
- */
+
 export const getCachedAlerts = () => {
   try {
     const cached = localStorage.getItem(CACHE_KEYS.RECENT_ALERTS);
@@ -28,10 +22,7 @@ export const getCachedAlerts = () => {
   return [];
 };
 
-/**
- * Save earthquake alert to cache
- * @param {Object} earthquake - Earthquake object
- */
+
 export const saveAlertToCache = (earthquake) => {
   try {
     const alerts = getCachedAlerts();
@@ -58,11 +49,7 @@ export const saveAlertToCache = (earthquake) => {
   }
 };
 
-/**
- * Get safety guide from cache
- * @param {string} locationKey - Key based on location and coordinates
- * @returns {Array|null} Safety guide array or null if not found
- */
+
 export const getCachedSafetyGuide = (locationKey) => {
   try {
     const cached = localStorage.getItem(CACHE_KEYS.SAFETY_GUIDES);
@@ -84,11 +71,7 @@ export const getCachedSafetyGuide = (locationKey) => {
   return null;
 };
 
-/**
- * Save safety guide to cache
- * @param {string} locationKey - Key based on location and coordinates
- * @param {Array} safetyGuide - Safety guide array
- */
+
 export const saveSafetyGuideToCache = (locationKey, safetyGuide) => {
   try {
     if (!safetyGuide || !Array.isArray(safetyGuide) || safetyGuide.length === 0) {
@@ -120,12 +103,7 @@ export const saveSafetyGuideToCache = (locationKey, safetyGuide) => {
   }
 };
 
-/**
- * Generate a cache key for safety guide based on location and coordinates
- * @param {string} location - Location string
- * @param {Array} coordinates - [longitude, latitude]
- * @returns {string} Cache key
- */
+
 export const generateSafetyGuideKey = (location, coordinates) => {
   const loc = (location || 'unknown').toLowerCase().replace(/[^a-z0-9]/g, '_');
   const coords = coordinates && coordinates.length >= 2 
@@ -134,18 +112,12 @@ export const generateSafetyGuideKey = (location, coordinates) => {
   return `${loc}_${coords}`;
 };
 
-/**
- * Check if device is online
- * @returns {boolean} True if online
- */
+
 export const isOnline = () => {
   return navigator.onLine !== false;
 };
 
-/**
- * Clear old cache entries (older than specified days)
- * @param {number} days - Number of days to keep
- */
+
 export const clearOldCache = (days = 30) => {
   try {
     const cutoff = Date.now() - (days * 24 * 60 * 60 * 1000);
