@@ -4,7 +4,7 @@ import {
     getUser, getUserProfile,
     logout,
     signIn,
-    validateUserInfo,
+    validateUserInfo
 } from "../controllers/auth.js";
 import auth from "../middleware/auth.js";
 
@@ -17,4 +17,4 @@ router.post("/signup", validateUserInfo, createUser);
 router.get('/user/profile', auth, getUserProfile);
 router.get('/specificUser', auth, getSpecificUser);
 
-export default router;
+export default router; 
