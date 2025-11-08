@@ -17,12 +17,10 @@ export const EarthquakeAlertProvider = ({ children }) => {
   const viewMapCallbackRef = useRef(null);
 
   const checkAndShowAlert = useCallback((earthquake) => {
-    if (shouldShowAlert(earthquake)) {
-      setAlertEarthquake(earthquake);
-      setIsAlertOpen(true);
-      return true;
-    }
-    return false;
+    
+    setAlertEarthquake(earthquake);
+    setIsAlertOpen(true);
+    return true;
   }, []);
 
   const closeAlert = useCallback(() => {

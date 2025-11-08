@@ -26,7 +26,6 @@ const ProfileForm = () => {
   };
 
   const handleSave = () => {
-    // Validate passwords
     if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
       setError('New passwords do not match');
       return;
@@ -37,14 +36,12 @@ const ProfileForm = () => {
       return;
     }
 
-    // Handle save logic here
     console.log('Profile updated:', {
       username: formData.username,
       phoneNumber: formData.phoneNumber,
       currentPassword: formData.currentPassword,
       newPassword: formData.newPassword
     });
-    // You would typically make an API call here to update the user profile
   };
 
   return (
@@ -58,7 +55,6 @@ const ProfileForm = () => {
           </div>
         )}
 
-        {/* Username */}
         <div>
           <label className="block text-white font-medium mb-2">
             Username
@@ -73,7 +69,6 @@ const ProfileForm = () => {
           />
         </div>
 
-        {/* Phone Number */}
         <div>
           <label className="block text-white font-medium mb-2">
             Phone Number
@@ -88,11 +83,9 @@ const ProfileForm = () => {
           />
         </div>
 
-        {/* Password Change Section */}
         <div className="pt-4 border-t border-gray-700">
           <h3 className="text-lg font-semibold text-white mb-4">Change Password</h3>
           
-          {/* Current Password */}
           <div className="mb-4">
             <label className="block text-white font-medium mb-2">
               Current Password
@@ -125,7 +118,6 @@ const ProfileForm = () => {
             </div>
           </div>
 
-          {/* New Password */}
           <div className="mb-4">
             <label className="block text-white font-medium mb-2">
               New Password
@@ -158,7 +150,6 @@ const ProfileForm = () => {
             </div>
           </div>
 
-          {/* Confirm Password */}
           <div>
             <label className="block text-white font-medium mb-2">
               Confirm New Password
@@ -192,7 +183,6 @@ const ProfileForm = () => {
           </div>
         </div>
 
-        {/* Save Button */}
         <button
           onClick={handleSave}
           className="w-full bg-[#FF7F00] text-white py-3 rounded-lg font-semibold hover:bg-[#FF8F20] transition-colors"

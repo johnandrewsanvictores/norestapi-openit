@@ -6,6 +6,7 @@ import EarthquakeFeed from "./pages/EarthquakeFeed.jsx";
 import Analytics from "./pages/Analytics.jsx";
 import Settings from "./pages/Settings.jsx";
 import Profile from "./pages/Profile.jsx";
+import Simulation from "./pages/Simulation.jsx";
 
 function App() {
 
@@ -18,6 +19,7 @@ function App() {
         <Route path="/dashboard/analytics" element={<Analytics />} />
         <Route path="/dashboard/settings" element={<Settings />} />
         <Route path="/dashboard/profile" element={<Profile />} />
+        <Route path="/dashboard/simulation" element={<Simulation />} />
       </Routes>
     </>
   );

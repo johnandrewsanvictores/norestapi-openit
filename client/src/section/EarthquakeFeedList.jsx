@@ -8,6 +8,8 @@ const EarthquakeFeedList = () => {
   const [earthquakes, setEarthquakes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const getDateRange = () => {
     const today = new Date();
@@ -80,7 +82,8 @@ const EarthquakeFeedList = () => {
           params: {
             starttime: dateRange.starttime,
             endtime: dateRange.endtime,
-            minMag: 3
+            minMag: 3,
+            includeSimulated: true
           },
           withCredentials: true
         });
@@ -100,10 +103,11 @@ const EarthquakeFeedList = () => {
               alertColor: alert.color,
               bgColor: alert.bgColor,
               tsunami: quake.tsunami || 0,
-              magnitude_type: quake.magnitude_type
+              magnitude_type: quake.magnitude_type || 'SIM',
+              isSimulated: quake.isSimulated || false
             };
           })
-          .sort((a, b) => b.timestamp - a.timestamp); 
+          .sort((a, b) => b.timestamp - a.timestamp);
 
         setEarthquakes(transformedData);
       } catch (err) {
@@ -115,6 +119,16 @@ const EarthquakeFeedList = () => {
     };
 
     fetchEarthquakes();
+
+    const handleSimulatedEarthquakeAdded = () => {
+      fetchEarthquakes();
+    };
+
+    window.addEventListener('simulatedEarthquakeAdded', handleSimulatedEarthquakeAdded);
+    
+    return () => {
+      window.removeEventListener('simulatedEarthquakeAdded', handleSimulatedEarthquakeAdded);
+    };
   }, []);
 
   const handleEarthquakeClick = (earthquake) => {
@@ -147,6 +161,16 @@ const EarthquakeFeedList = () => {
     );
   }
 
+  const totalPages = Math.ceil(earthquakes.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentEarthquakes = earthquakes.slice(startIndex, endIndex);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   if (earthquakes.length === 0) {
     return (
       <div className="bg-[#2A2A2A] rounded-lg p-8 text-center">
@@ -158,16 +182,23 @@ const EarthquakeFeedList = () => {
   return (
     <>
       <div className="space-y-4">
-        {earthquakes.map((quake, index) => (
+        {currentEarthquakes.map((quake, index) => (
           <div
             key={`${quake.timestamp}-${index}`}
             onClick={() => handleEarthquakeClick(quake)}
             className="bg-[#2A2A2A] rounded-lg p-6 border border-gray-800 flex items-center justify-between hover:border-gray-700 transition-colors cursor-pointer"
           >
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-white mb-2">
-                Magnitude {quake.magnitude} Earthquake
-              </h3>
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-lg font-bold text-white">
+                  Magnitude {quake.magnitude} Earthquake
+                </h3>
+                {quake.isSimulated && (
+                  <span className="px-2 py-0.5 bg-yellow-600/30 border border-yellow-600/50 rounded text-xs text-yellow-300 font-semibold">
+                    SIMULATED
+                  </span>
+                )}
+              </div>
               <p className="text-sm text-gray-400 mb-1">{quake.location}</p>
               <p className="text-xs text-gray-500">{quake.time}</p>
             </div>
@@ -176,6 +207,64 @@ const EarthquakeFeedList = () => {
             </div>
           </div>
         ))}
+      </div>
+
+      {totalPages > 1 && (
+        <div className="mt-8 flex items-center justify-center gap-2">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-[#2A2A2A] border border-gray-700 rounded-lg text-white hover:bg-[#3A3A3A] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Previous
+          </button>
+          
+          <div className="flex gap-2">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+              if (
+                page === 1 ||
+                page === totalPages ||
+                (page >= currentPage - 2 && page <= currentPage + 2)
+              ) {
+                return (
+                  <button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    className={`px-4 py-2 rounded-lg transition-colors ${
+                      currentPage === page
+                        ? 'bg-[#FF7F00] text-white'
+                        : 'bg-[#2A2A2A] border border-gray-700 text-white hover:bg-[#3A3A3A]'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              } else if (
+                page === currentPage - 3 ||
+                page === currentPage + 3
+              ) {
+                return (
+                  <span key={page} className="px-2 text-gray-500">
+                    ...
+                  </span>
+                );
+              }
+              return null;
+            })}
+          </div>
+
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-[#2A2A2A] border border-gray-700 rounded-lg text-white hover:bg-[#3A3A3A] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Next
+          </button>
+        </div>
+      )}
+
+      <div className="mt-4 text-center text-gray-400 text-sm">
+        Showing {startIndex + 1} to {Math.min(endIndex, earthquakes.length)} of {earthquakes.length} earthquakes
       </div>
 
       <EarthquakeDetailsModal
