@@ -4,8 +4,7 @@ import {
     getUser, getUserProfile,
     logout,
     signIn,
-    validateUserInfo,
-    sendSMS
+    validateUserInfo
 } from "../controllers/auth.js";
 import auth from "../middleware/auth.js";
 
@@ -17,6 +16,5 @@ router.post("/signin", signIn);
 router.post("/signup", validateUserInfo, createUser);
 router.get('/user/profile', auth, getUserProfile);
 router.get('/specificUser', auth, getSpecificUser);
-router.post('/send-sms', auth, sendSMS);
 
-export default router;
+export default router; 

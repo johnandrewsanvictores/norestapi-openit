@@ -4,8 +4,7 @@ const USGS_EARTHQUAKE_API = 'https://earthquake.usgs.gov/fdsnws/event/1/query';
 
 export const getPhilippinesEarthquakeData = async (req, res) => {
     try {
-
-        var minMag = req.query.minMagnitude || 6.0;
+        var minMag = req.query.minMag || req.query.minMagnitude || 3.0;
         var startTime = req.query.starttime || '2025-10-01';
         var endTime = req.query.endtime || '2025-12-01';
 
