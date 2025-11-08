@@ -165,26 +165,21 @@ export const shouldShowAlert = (earthquake) => {
     earthquakeLat = earthquakeCoords[1];
   }
   
-  // Determine which location to use for distance calculation
   let alertLocationLat, alertLocationLon;
   
-  // If alert settings have a location, use that
-  if (alertSettings.location) {
+  if (alertSettings.location && alertSettings.location !== 'Default') {
     const alertCoords = getCoordinatesFromLocation(alertSettings.location);
     alertLocationLon = alertCoords[0];
     alertLocationLat = alertCoords[1];
   } 
-  // Otherwise, use user's GPS location if available
   else if (userLocation && userLocation.latitude && userLocation.longitude) {
     alertLocationLat = userLocation.latitude;
     alertLocationLon = userLocation.longitude;
   }
-  // If no location at all, show alert based on magnitude only
   else {
-    return true;
+    return false;
   }
   
-  // Calculate distance from alert location to earthquake
   const distance = calculateDistance(
     alertLocationLat,
     alertLocationLon,
@@ -194,7 +189,6 @@ export const shouldShowAlert = (earthquake) => {
   
   const alertRadius = parseFloat(alertSettings.alertRadius || 100);
   
-  // Show alert if earthquake is within alert radius
   return distance <= alertRadius;
 };
 

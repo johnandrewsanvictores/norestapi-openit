@@ -26,7 +26,6 @@ export const getUser = (req, res) => {
 
 export const logout = (req, res) => {
     try {
-        // Clear the token cookie with proper settings
         res.clearCookie('token', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -92,7 +91,6 @@ export const createUser = async (req, res) => {
     } catch(error) {
         console.error('Create user error:', error);
         
-        // Handle specific MongoDB errors
         if (error.code === 11000) {
             return res.status(409).json({ error: 'Username already exists' });
         }

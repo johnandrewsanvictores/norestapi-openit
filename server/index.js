@@ -8,6 +8,7 @@ import session from 'express-session';
 import dotenv from 'dotenv';
 
 dotenv.config();
+import axios from 'axios';
 
 const app = express();
 
@@ -59,6 +60,33 @@ app.use((err, req, res, next) => {
 app.get('/', (req, res) => {
     res.json({"msg": "Server is running"});
 });
+
+
+app.post('/send-sms', async (req, res) => {
+    try {
+        const { phoneNumbers, text } = req.body;
+        const smsApiUrl = 'https://api.sms-gate.app/3rdparty/v1/message';
+        const smsApiUsername = process.env.SMS_API_USERNAME;
+        const smsApiPassword = process.env.SMS_API_PASSWORD;
+
+        await axios.post(smsApiUrl, {
+            textMessage: { text },
+            phoneNumbers,
+            "simNumber": 1,
+        }, {
+            auth: {
+                username: smsApiUsername,
+                password: smsApiPassword
+            }
+        });
+
+        res.status(200).json({ success: true, message: 'SMS sent successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to send SMS', error: error.message });
+    }
+});
+
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
