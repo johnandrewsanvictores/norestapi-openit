@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import cors from 'cors';
 import authRoutes from './routes/auth.js';
 import earthquakeRoutes from './routes/earthquake_data.js';
+import alertThresholdRoutes from './routes/alert_threshold.js';
 import connectDbB from "./config/db.js";
 import session from 'express-session';
 import dotenv from 'dotenv';
@@ -39,6 +40,7 @@ app.use(cors({
 
 app.use("/auth", authRoutes);
 app.use("/earthquake", earthquakeRoutes);
+app.use("/alert-threshold", alertThresholdRoutes);
 
 app.use(session({
     secret: process.env.SESSION_SECRET || 'default-secret-change-in-production',

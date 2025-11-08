@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const locationSchema = new mongoose.Schema({
+const Alert_threshold_schema = new mongoose.Schema({
     user_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -17,10 +17,20 @@ const locationSchema = new mongoose.Schema({
     location_name: {
         type: String,
         required: true
+    },
+    minimum_magnitude: {
+        type: Number,
+        required: true,
+        default: 4.0 
+    },
+    alert_radius: {
+        type: Number,
+        required: true,
+        default: 5 
     }
 }, { timestamps: true });
 
-const Location = mongoose.model('Location', locationSchema);
+const Alert_threshold = mongoose.model('Alert_threshold', Alert_threshold_schema);
 
-export default Location;
+export default Alert_threshold;
 
