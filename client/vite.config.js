@@ -6,5 +6,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     allowedHosts: "all",
+  },
+  optimizeDeps: {
+    include: ['mapbox-gl']
   }
 })

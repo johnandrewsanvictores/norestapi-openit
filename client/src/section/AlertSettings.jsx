@@ -17,7 +17,6 @@ const AlertSettings = () => {
   };
 
   const handleSave = () => {
-    // Handle save logic here
     console.log('Settings saved:', {
       minMagnitude,
       detectionRadius,
@@ -30,7 +29,6 @@ const AlertSettings = () => {
       <h2 className="text-xl font-bold text-white mb-6">Alert Settings</h2>
 
       <div className="space-y-6">
-        {/* Minimum Magnitude */}
         <div>
           <label className="block text-white font-medium mb-3">
             Minimum Magnitude
@@ -56,7 +54,6 @@ const AlertSettings = () => {
           </div>
         </div>
 
-        {/* Detection Radius */}
         <div>
           <label className="block text-white font-medium mb-3">
             Detection Radius
@@ -82,7 +79,6 @@ const AlertSettings = () => {
           </div>
         </div>
 
-        {/* Notification Methods */}
         <div>
           <label className="block text-white font-medium mb-3">
             Notification Methods
@@ -106,7 +102,6 @@ const AlertSettings = () => {
           </div>
         </div>
 
-        {/* Save Button */}
         <button
           onClick={handleSave}
           className="w-full bg-[#FF7F00] text-white py-3 rounded-lg font-semibold hover:bg-[#FF8F20] transition-colors"

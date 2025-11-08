@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../../../axios.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 
-const SignUpModal = ({ isOpen, onClose, onSwitchToSignIn }) => {
+const SignUpModal = ({ isOpen, onClose, onSwitchToSignIn, onLocationPermissionRequest }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: "",
@@ -82,7 +82,12 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToSignIn }) => {
 
       resetForm();
       onClose();
-      navigate("/decide-user-type");
+      
+      if (onLocationPermissionRequest) {
+        onLocationPermissionRequest();
+      } else {
+        navigate("/decide-user-type");
+      }
     } catch (error) {
       if (error.response && error.response.status === 400) {
         setError(
@@ -112,7 +117,6 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToSignIn }) => {
           ×
         </button>
 
-        {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-8 h-8 flex items-center justify-center">
@@ -125,7 +129,6 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToSignIn }) => {
           <p className="text-gray-400 text-sm ml-11">Real-time earthquake monitoring</p>
         </div>
 
-        {/* Form */}
         <div className="mb-4">
           <h3 className="text-xl font-bold text-white mb-2">Create Account</h3>
           <p className="text-gray-400 text-sm mb-5">Join us to receive real-time earthquake alerts</p>
@@ -215,7 +218,6 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToSignIn }) => {
           </form>
         </div>
 
-        {/* Navigation Link */}
         <div className="text-center mb-4">
           <p className="text-gray-400 text-sm">
             Already have an account?{" "}
@@ -228,7 +230,6 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToSignIn }) => {
           </p>
         </div>
 
-        {/* Disclaimer */}
         <p className="text-gray-500 text-xs text-center">
           By creating an account, you agree to our Terms of Service and Privacy Policy
         </p>

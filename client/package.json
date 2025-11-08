@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "autoprefixer": "^10.4.21",
+    "axios": "^1.10.0",
+    "mapbox-gl": "^3.16.0",
     "axios": "^1.13.2",
     "cheerio": "^1.1.2",
     "mapbox-gl": "^3.16.0",
