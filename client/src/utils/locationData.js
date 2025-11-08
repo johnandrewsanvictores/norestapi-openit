@@ -1,24 +1,16 @@
-/**
- * Location data organized by country
- */
 
-// Detect country from coordinates
 export const detectCountry = (latitude, longitude) => {
-  // Philippines bounds: approximately 5°N to 20°N, 115°E to 130°E
   if (latitude >= 5 && latitude <= 20 && longitude >= 115 && longitude <= 130) {
     return 'Philippines';
   }
   
-  // USA bounds: approximately 25°N to 50°N, 125°W to 65°W
   if (latitude >= 25 && latitude <= 50 && longitude >= -125 && longitude <= -65) {
     return 'USA';
   }
   
-  // Default to Philippines for this app
   return 'Philippines';
 };
 
-// Philippines major cities and regions
 export const philippinesLocations = [
   'Manila, Philippines',
   'Quezon City, Philippines',
@@ -62,7 +54,6 @@ export const philippinesLocations = [
   'Malolos, Philippines'
 ];
 
-// USA locations (for reference, though app is focused on Philippines)
 export const usaLocations = [
   'San Francisco, CA',
   'Los Angeles, CA',
@@ -76,7 +67,6 @@ export const usaLocations = [
   'Anaheim, CA'
 ];
 
-// Get locations based on country
 export const getLocationsByCountry = (country) => {
   switch (country) {
     case 'Philippines':
@@ -84,11 +74,10 @@ export const getLocationsByCountry = (country) => {
     case 'USA':
       return usaLocations;
     default:
-      return philippinesLocations; // Default to Philippines
+      return philippinesLocations; 
   }
 };
 
-// Get user's country from their location
 export const getUserCountry = () => {
   try {
     const locationData = localStorage.getItem('userLocation');
@@ -101,6 +90,6 @@ export const getUserCountry = () => {
   } catch (error) {
     console.error('Error getting user country:', error);
   }
-  return 'Philippines'; // Default
+  return 'Philippines'; 
 };
 

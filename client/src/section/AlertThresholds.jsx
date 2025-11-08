@@ -9,74 +9,36 @@ const AlertThresholds = () => {
   const [location, setLocation] = useState('');
   const [locations, setLocations] = useState([]);
 
-  // Load settings and detect country on mount
   useEffect(() => {
     try {
-      // Get user's country and load appropriate locations
       const userCountry = getUserCountry();
       const countryLocations = getLocationsByCountry(userCountry);
-      setLocations(countryLocations);
+      setLocations(['Default', ...countryLocations]);
 
-      // Load saved settings from localStorage
       const settings = localStorage.getItem('alertSettings');
       if (settings) {
         const parsed = JSON.parse(settings);
         setMinMagnitude(parsed.minMagnitude?.toString() || '3.0');
         setAlertRadius(parsed.alertRadius?.toString() || '100');
         
-        // Set location if saved, otherwise use user's current location
-        if (parsed.location && countryLocations.includes(parsed.location)) {
+        if (parsed.location && (parsed.location === 'Default' || countryLocations.includes(parsed.location))) {
           setLocation(parsed.location);
         } else {
-          // Try to use user's current location name
-          const userLocationName = getUserLocationName();
-          if (userLocationName && userLocationName !== 'Location not set') {
-            // Check if user location is in the list
-            const matchingLocation = countryLocations.find(loc => 
-              userLocationName.includes(loc.split(',')[0]) || 
-              loc.includes(userLocationName.split(',')[0])
-            );
-            if (matchingLocation) {
-              setLocation(matchingLocation);
-            } else if (countryLocations.length > 0) {
-              // Default to first location in list
-              setLocation(countryLocations[0]);
-            }
-          } else if (countryLocations.length > 0) {
-            setLocation(countryLocations[0]);
-          }
+          setLocation('Default');
         }
       } else {
-        // No saved settings, use defaults
-        const userLocationName = getUserLocationName();
-        if (userLocationName && userLocationName !== 'Location not set') {
-          const matchingLocation = countryLocations.find(loc => 
-            userLocationName.includes(loc.split(',')[0]) || 
-            loc.includes(userLocationName.split(',')[0])
-          );
-          if (matchingLocation) {
-            setLocation(matchingLocation);
-          } else if (countryLocations.length > 0) {
-            setLocation(countryLocations[0]);
-          }
-        } else if (countryLocations.length > 0) {
-          setLocation(countryLocations[0]);
-        }
+        setLocation('Default');
       }
     } catch (error) {
       console.error('Error loading alert settings:', error);
-      // Set default locations
       const userCountry = getUserCountry();
       const defaultLocations = getLocationsByCountry(userCountry);
-      setLocations(defaultLocations);
-      if (defaultLocations.length > 0) {
-        setLocation(defaultLocations[0]);
-      }
+      setLocations(['Default', ...defaultLocations]);
+      setLocation('Default');
     }
   }, []);
 
   const handleSave = () => {
-    // Validate inputs
     const magnitude = parseFloat(minMagnitude);
     const radius = parseFloat(alertRadius);
     
@@ -90,7 +52,7 @@ const AlertThresholds = () => {
       return;
     }
     
-    if (!location) {
+    if (!location || location === '') {
       showError('Please select a location');
       return;
     }
@@ -105,7 +67,6 @@ const AlertThresholds = () => {
       localStorage.setItem('alertSettings', JSON.stringify(settings));
       console.log('Alert thresholds saved:', settings);
       
-      // Dispatch event to notify other components
       window.dispatchEvent(new Event('alertSettingsUpdated'));
       
       showSuccess('Alert settings saved successfully!');
@@ -131,10 +92,15 @@ const AlertThresholds = () => {
           >
             {locations.map((loc) => (
               <option key={loc} value={loc} className="bg-[#1A1A1A]">
-                {loc}
+                {loc === 'Default' ? 'Default (Use GPS Location)' : loc}
               </option>
             ))}
           </select>
+          <p className="text-gray-400 text-xs mt-2">
+            {location === 'Default' 
+              ? 'Alerts will be based on your current GPS location' 
+              : `Alerts will be based on ${location}`}
+          </p>
         </div>
 
         <div>
