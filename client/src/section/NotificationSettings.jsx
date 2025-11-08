@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 const NotificationSettings = () => {
   const [pushNotifications, setPushNotifications] = useState(true);
@@ -6,26 +6,30 @@ const NotificationSettings = () => {
   const [smsNotifications, setSmsNotifications] = useState(false);
 
   const handleSave = () => {
-    console.log('Notification settings saved:', {
+    console.log("Notification settings saved:", {
       pushNotifications,
       emailNotifications,
-      smsNotifications
+      smsNotifications,
     });
   };
 
   return (
-    <div className="bg-[#2A2A2A] rounded-lg p-6 border border-gray-800">
-      <h2 className="text-xl font-bold text-white mb-6">Notifications</h2>
+    <div className="bg-[#2A2A2A] rounded-lg p-4 sm:p-6 border border-gray-800">
+      <h2 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6">
+        Notifications
+      </h2>
 
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         <label className="flex items-center space-x-3 cursor-pointer">
           <input
             type="checkbox"
             checked={pushNotifications}
             onChange={(e) => setPushNotifications(e.target.checked)}
-            className="w-5 h-5 rounded border-gray-600 bg-[#1A1A1A] text-[#FF7F00] focus:ring-[#FF7F00] focus:ring-offset-0"
+            className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-600 bg-[#1A1A1A] text-[#FF7F00] focus:ring-[#FF7F00] focus:ring-offset-0"
           />
-          <span className="text-white">Push Notifications</span>
+          <span className="text-sm sm:text-base text-white">
+            Push Notifications
+          </span>
         </label>
 
         <label className="flex items-center space-x-3 cursor-pointer">
@@ -33,9 +37,11 @@ const NotificationSettings = () => {
             type="checkbox"
             checked={emailNotifications}
             onChange={(e) => setEmailNotifications(e.target.checked)}
-            className="w-5 h-5 rounded border-gray-600 bg-[#1A1A1A] text-[#FF7F00] focus:ring-[#FF7F00] focus:ring-offset-0"
+            className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-600 bg-[#1A1A1A] text-[#FF7F00] focus:ring-[#FF7F00] focus:ring-offset-0"
           />
-          <span className="text-white">Email Notifications</span>
+          <span className="text-sm sm:text-base text-white">
+            Email Notifications
+          </span>
         </label>
 
         <label className="flex items-center space-x-3 cursor-pointer">
@@ -43,14 +49,16 @@ const NotificationSettings = () => {
             type="checkbox"
             checked={smsNotifications}
             onChange={(e) => setSmsNotifications(e.target.checked)}
-            className="w-5 h-5 rounded border-gray-600 bg-[#1A1A1A] text-[#FF7F00] focus:ring-[#FF7F00] focus:ring-offset-0"
+            className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-600 bg-[#1A1A1A] text-[#FF7F00] focus:ring-[#FF7F00] focus:ring-offset-0"
           />
-          <span className="text-white">SMS Notifications</span>
+          <span className="text-sm sm:text-base text-white">
+            SMS Notifications
+          </span>
         </label>
 
         <button
           onClick={handleSave}
-          className="w-full bg-[#FF7F00] text-white py-3 rounded-lg font-semibold hover:bg-[#FF8F20] transition-colors mt-4"
+          className="w-full bg-[#FF7F00] text-white py-2.5 sm:py-3 text-sm sm:text-base rounded-lg font-semibold hover:bg-[#FF8F20] transition-colors mt-4"
         >
           Save Changes
         </button>
@@ -60,4 +68,3 @@ const NotificationSettings = () => {
 };
 
 export default NotificationSettings;
-
