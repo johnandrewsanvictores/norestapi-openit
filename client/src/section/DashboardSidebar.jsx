@@ -1,11 +1,39 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import api from '../../axios.js';
+import { showConfirmation, showSuccess } from '../utils/alertHelper.js';
 
 const DashboardSidebar = () => {
+  const { setUser } = useAuth();
+  const navigate = useNavigate();
+  const [isProcessingLogout, setIsProcessingLogout] = useState(false);
   const getNavLinkClass = ({ isActive }) => {
     return isActive
       ? "flex items-center space-x-3 px-4 py-3 bg-[#FF7F00]/20 text-[#FF7F00] border-l-4 border-[#FF7F00] transition-colors"
       : "flex items-center space-x-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-gray-800 transition-colors";
+  };
+
+  const handleLogout = async () => {
+    try {
+      const confirmed = await showConfirmation({
+        title: "Log out?",
+        text: "Are you sure you want to log out?",
+        confirmButtonText: "Log Out",
+      });
+
+      if (!confirmed) return;
+
+      setIsProcessingLogout(true);
+      const res = await api.post("/auth/logout");
+      setUser(null);
+      showSuccess(res.data.message);
+      navigate("/");
+    } catch (error) {
+      console.error("Logout failed", error);
+    } finally {
+      setIsProcessingLogout(false);
+    }
   };
 
   return (
@@ -67,6 +95,19 @@ const DashboardSidebar = () => {
           <span>Profile</span>
         </NavLink>
       </nav>
+
+      <div className="p-4 border-t border-gray-800">
+        <button
+          onClick={handleLogout}
+          disabled={isProcessingLogout}
+          className="w-full flex items-center space-x-3 text-red-500 hover:text-white hover:bg-red-500/20 rounded-lg px-4 py-3 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          <span>{isProcessingLogout ? 'Logging out...' : 'Logout'}</span>
+        </button>
+      </div>
     </aside>
   );
 };

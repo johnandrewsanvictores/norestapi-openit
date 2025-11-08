@@ -1,11 +1,13 @@
 import React from 'react'
 import SignInModal from '../components/modals/SignInModal'
 import SignUpModal from '../components/modals/SignUpModal'
+import LocationPermissionModal from '../components/modals/LocationPermissionModal'
 import { useState } from 'react'
 
 function Homepage() {
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false)
   const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false)
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false)
 
   const handleGetStarted = () => {
     setIsSignUpModalOpen(true)
@@ -28,6 +30,14 @@ function Homepage() {
   const handleSwitchToSignIn = () => {
     setIsSignUpModalOpen(false)
     setIsSignInModalOpen(true)
+  }
+
+  const handleLocationPermissionRequest = () => {
+    setIsLocationModalOpen(true)
+  }
+
+  const handleCloseLocationModal = () => {
+    setIsLocationModalOpen(false)
   }
 
   return (
@@ -171,6 +181,12 @@ function Homepage() {
         isOpen={isSignUpModalOpen}
         onClose={handleCloseModals}
         onSwitchToSignIn={handleSwitchToSignIn}
+        onLocationPermissionRequest={handleLocationPermissionRequest}
+      />
+
+      <LocationPermissionModal
+        isOpen={isLocationModalOpen}
+        onClose={handleCloseLocationModal}
       />
     </>
   )

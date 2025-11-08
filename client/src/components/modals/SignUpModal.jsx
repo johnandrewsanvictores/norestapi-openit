@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../../../axios.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 
-const SignUpModal = ({ isOpen, onClose, onSwitchToSignIn }) => {
+const SignUpModal = ({ isOpen, onClose, onSwitchToSignIn, onLocationPermissionRequest }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: "",
@@ -82,7 +82,13 @@ const SignUpModal = ({ isOpen, onClose, onSwitchToSignIn }) => {
 
       resetForm();
       onClose();
-      navigate("/decide-user-type");
+      
+      // Show location permission modal instead of navigating directly
+      if (onLocationPermissionRequest) {
+        onLocationPermissionRequest();
+      } else {
+        navigate("/decide-user-type");
+      }
     } catch (error) {
       if (error.response && error.response.status === 400) {
         setError(

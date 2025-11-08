@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
+import EarthquakeDetailsModal from '../components/modals/EarthquakeDetailsModal';
 
 const EarthquakeFeedList = () => {
+  const [selectedEarthquake, setSelectedEarthquake] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const earthquakes = [
     {
       magnitude: "5.2",
@@ -28,28 +32,46 @@ const EarthquakeFeedList = () => {
     }
   ];
 
+  const handleEarthquakeClick = (earthquake) => {
+    setSelectedEarthquake(earthquake);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedEarthquake(null);
+  };
+
   return (
-    <div className="space-y-4">
-      {earthquakes.map((quake, index) => (
-        <div
-          key={index}
-          className="bg-[#2A2A2A] rounded-lg p-6 border border-gray-800 flex items-center justify-between hover:border-gray-700 transition-colors"
-        >
-          <div className="flex-1">
-            <h3 className="text-lg font-bold text-white mb-2">
-              Magnitude {quake.magnitude} Earthquake
-            </h3>
-            <p className="text-sm text-gray-400 mb-1">{quake.location}</p>
-            <p className="text-xs text-gray-500">{quake.time}</p>
+    <>
+      <div className="space-y-4">
+        {earthquakes.map((quake, index) => (
+          <div
+            key={index}
+            onClick={() => handleEarthquakeClick(quake)}
+            className="bg-[#2A2A2A] rounded-lg p-6 border border-gray-800 flex items-center justify-between hover:border-gray-700 transition-colors cursor-pointer"
+          >
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-white mb-2">
+                Magnitude {quake.magnitude} Earthquake
+              </h3>
+              <p className="text-sm text-gray-400 mb-1">{quake.location}</p>
+              <p className="text-xs text-gray-500">{quake.time}</p>
+            </div>
+            <div className={`ml-4 px-4 py-2 rounded-lg font-bold text-sm uppercase ${quake.alertColor} ${quake.bgColor}`}>
+              {quake.alertLevel}
+            </div>
           </div>
-          <div className={`ml-4 px-4 py-2 rounded-lg font-bold text-sm uppercase ${quake.alertColor} ${quake.bgColor}`}>
-            {quake.alertLevel}
-          </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+
+      <EarthquakeDetailsModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        earthquake={selectedEarthquake}
+      />
+    </>
   );
 };
 
 export default EarthquakeFeedList;
-
