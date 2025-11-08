@@ -25,15 +25,15 @@ const Dashboard = () => {
         const today = new Date();
         const oneYearAgo = new Date();
         oneYearAgo.setFullYear(today.getFullYear() - 1);
-
+        
         const formatDate = (date) => {
           const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, "0");
-          const day = String(date.getDate()).padStart(2, "0");
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
           return `${year}-${month}-${day}`;
         };
 
-        const response = await api.get("/earthquake/philippines", {
+        const response = await api.get('/earthquake/philippines', {
           params: {
             starttime: formatDate(oneYearAgo),
             endtime: formatDate(today),
@@ -44,11 +44,11 @@ const Dashboard = () => {
         });
 
         const transformedData = response.data.map((quake) => ({
-          magnitude: quake.magnitude?.toString() || "0.0",
-          location: quake.place || "Unknown location",
+          magnitude: quake.magnitude?.toString() || '0.0',
+          location: quake.place || 'Unknown location',
           latitude: quake.latitude,
           longitude: quake.longitude,
-          depth: quake.depth?.toString() || "0.0",
+          depth: quake.depth?.toString() || '0.0',
           time: quake.time,
           timestamp: quake.time,
           isSimulated: quake.isSimulated || false
@@ -56,7 +56,7 @@ const Dashboard = () => {
 
         setEarthquakes(transformedData);
       } catch (error) {
-        console.error("Error fetching earthquakes for monitoring:", error);
+        console.error('Error fetching earthquakes for monitoring:', error);
       }
     };
 
@@ -110,17 +110,9 @@ const Dashboard = () => {
     setSelectedEarthquake(null);
   };
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
-  const closeSidebar = () => {
-    setIsSidebarOpen(false);
-  };
-
   return (
     <div className="flex min-h-screen bg-[#1A1A1A]">
-      <DashboardSidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
+      <DashboardSidebar />
 
       <div className="flex-1 ml-64 p-8">
         <div className="flex justify-end items-start mb-6 relative">
@@ -146,35 +138,10 @@ const Dashboard = () => {
           />
         </div>
 
-        <div className="p-4 sm:p-6 lg:p-8">
-          <div className="hidden lg:flex justify-end items-start mb-6">
-            <div className="flex items-center space-x-4">
-              <button className="text-gray-400 hover:text-white transition-colors">
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <div className="mb-6 lg:mb-8">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">
-              Earthquake Monitor
-            </h1>
-            <p className="text-sm sm:text-base text-gray-400">
-              Real-time seismic activity tracking
-            </p>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-white mb-2">Earthquake Monitor</h1>
+          <p className="text-gray-400">Real-time seismic activity tracking</p>
+        </div>
 
         <MetricCards earthquakes={earthquakes} />
 
@@ -184,7 +151,6 @@ const Dashboard = () => {
         </div>
 
         <SeismicActivityChart earthquakes={earthquakes} />
-        </div>
       </div>
 
       <EarthquakeAlertModal
