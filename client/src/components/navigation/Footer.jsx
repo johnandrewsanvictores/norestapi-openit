@@ -11,7 +11,7 @@ const Footer = () => {
               <img src={logo} alt="logo" className="w-12 h-12" />
               <h2 className="text-2xl font-bold text-headingText dark:text-white">
                 <span className="text-headingText dark:text-white">
-                  Bayanimo
+                  Earthquake Alerts
                 </span>{" "}
                 <span className="text-primary"></span>
               </h2>
@@ -37,13 +37,13 @@ const Footer = () => {
                 href="#"
                 className="text-subHeadingText dark:text-gray-300 border-r border-gray-300 dark:border-gray-600 pr-4 hover:text-primary transition-colors"
               >
-                Rewards
+                Alerts
               </a>
               <a
                 href="#"
                 className="text-subHeadingText dark:text-gray-300 border-r border-gray-300 dark:border-gray-600 pr-4 hover:text-primary transition-colors"
               >
-                Join Activity
+                Safety
               </a>
             </div>
             <div className="flex items-center gap-10 mt-4">
