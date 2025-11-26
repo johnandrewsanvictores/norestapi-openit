@@ -2,21 +2,42 @@ import React, { useState, useEffect } from 'react';
 import DashboardSidebar from '../section/DashboardSidebar';
 import NotificationDropdown from '../components/NotificationDropdown';
 import EarthquakeDetailsModal from '../components/modals/EarthquakeDetailsModal';
-import EarthquakeAlertModal from '../components/modals/EarthquakeAlertModal';
 import { useEarthquakeAlert } from '../context/EarthquakeAlertContext';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { showSuccess, showError, showConfirmation } from '../utils/alertHelper.js';
-import { shouldShowAlert, calculateDistance, getUserLocation, getAlertSettings, getCoordinatesFromLocation } from '../utils/earthquakeAlert';
+import { shouldShowAlert, calculateDistance, getUserLocation, getAlertSettings, getCoordinatesFromLocation, getAvailableLocations } from '../utils/earthquakeAlert';
 import api from '../../axios.js';
 
 const Simulation = () => {
   const { user } = useAuth();
-  const { checkAndShowAlert, alertEarthquake, isAlertOpen, closeAlert, handleViewMap } = useEarthquakeAlert();
+  const { checkAndShowAlert, setViewMapHandler } = useEarthquakeAlert();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [earthquakes, setEarthquakes] = useState([]);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedEarthquake, setSelectedEarthquake] = useState(null);
+  
+  // Set view map handler for global alert modal
+  useEffect(() => {
+    const viewMapHandler = (earthquake) => {
+      if (earthquake) {
+        // Close any open alert modal first by ensuring isAlertOpen is false
+        // The alert modal should already be closed by the context, but we ensure it here
+        const formattedEarthquake = {
+          ...earthquake,
+          alertLevel: getAlertLevel(earthquake.magnitude).level,
+          alertColor: getAlertLevel(earthquake.magnitude).color,
+          bgColor: getAlertLevel(earthquake.magnitude).bgColor
+        };
+        // Use setTimeout to ensure alert modal is fully closed
+        setTimeout(() => {
+        setSelectedEarthquake(formattedEarthquake);
+        setIsDetailsModalOpen(true);
+        }, 150);
+      }
+    };
+    setViewMapHandler(viewMapHandler);
+  }, [setViewMapHandler]);
   
   const [testEarthquake, setTestEarthquake] = useState({
     magnitude: '5.0',
@@ -79,6 +100,18 @@ const Simulation = () => {
     }));
   };
 
+  const handleLocationChange = (e) => {
+    const selectedLocation = e.target.value;
+    const coords = getCoordinatesFromLocation(selectedLocation);
+    
+    setTestEarthquake(prev => ({
+      ...prev,
+      location: selectedLocation,
+      longitude: coords[0].toString(),
+      latitude: coords[1].toString()
+    }));
+  };
+
   const triggerTestAlert = async () => {
     const now = new Date();
     const earthquake = {
@@ -136,23 +169,11 @@ const Simulation = () => {
         }, { withCredentials: true });
 
         if (response.data.success) {
-          const earthquakeId = `SIMULATED-${earthquake.location}-${earthquake.magnitude}-${earthquake.timestamp}`;
-          try {
-            const stored = localStorage.getItem('processedEarthquakes');
-            const data = stored ? JSON.parse(stored) : [];
-            data.push({ id: earthquakeId, timestamp: earthquake.timestamp, isSimulated: true });
-            const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-            const filtered = data.filter(item => item.timestamp >= sevenDaysAgo);
-            localStorage.setItem('processedEarthquakes', JSON.stringify(filtered));
-          } catch (error) {
-            console.error('Error saving to processed list:', error);
-          }
-
           window.dispatchEvent(new Event('simulatedEarthquakeAdded'));
           
-          checkAndShowAlert(earthquake);
-          
-          window.dispatchEvent(new CustomEvent('earthquakeAlert', { detail: earthquake }));
+          // Show alert directly - checkAndShowAlert will handle marking it as processed
+          // It saves to localStorage AFTER showing the alert to prevent it from being skipped
+          await checkAndShowAlert(earthquake);
           
           showSuccess(`Test alert triggered! Distance: ${distance.toFixed(1)} km (within ${alertRadius} km radius)`);
         } else {
@@ -295,14 +316,18 @@ const Simulation = () => {
                 <label className="block text-white font-medium mb-2">
                   Location
                 </label>
-                <input
-                  type="text"
+                <select
                   name="location"
                   value={testEarthquake.location}
-                  onChange={handleInputChange}
+                  onChange={handleLocationChange}
                   className="w-full px-4 py-3 bg-[#1A1A1A] border border-gray-600 rounded-lg text-white focus:outline-none focus:border-[#FF7F00] transition-colors"
-                  placeholder="Manila, Philippines"
-                />
+                >
+                  {getAvailableLocations().map((location) => (
+                    <option key={location} value={location}>
+                      {location}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -508,29 +533,7 @@ const Simulation = () => {
           } : null}
         />
 
-        <EarthquakeAlertModal
-          isOpen={isAlertOpen}
-          onClose={closeAlert}
-          earthquake={alertEarthquake ? {
-            ...alertEarthquake,
-            alertLevel: getAlertLevel(alertEarthquake.magnitude).level,
-            alertColor: getAlertLevel(alertEarthquake.magnitude).color,
-            bgColor: getAlertLevel(alertEarthquake.magnitude).bgColor
-          } : null}
-          onViewMap={() => {
-            if (alertEarthquake) {
-              const formattedEarthquake = {
-                ...alertEarthquake,
-                alertLevel: getAlertLevel(alertEarthquake.magnitude).level,
-                alertColor: getAlertLevel(alertEarthquake.magnitude).color,
-                bgColor: getAlertLevel(alertEarthquake.magnitude).bgColor
-              };
-              setSelectedEarthquake(formattedEarthquake);
-              setIsDetailsModalOpen(true);
-            }
-            closeAlert();
-          }}
-        />
+        {/* Note: EarthquakeAlertModal is now in App.jsx and works globally */}
       </div>
     </div>
   );

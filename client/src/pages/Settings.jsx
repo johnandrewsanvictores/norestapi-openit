@@ -2,16 +2,16 @@ import React, { useState, useEffect } from 'react';
 import DashboardSidebar from '../section/DashboardSidebar';
 import AlertThresholds from '../section/AlertThresholds';
 import NotificationSettings from '../section/NotificationSettings';
+import LocationSettings from '../section/LocationSettings';
 import NotificationDropdown from '../components/NotificationDropdown';
 import EarthquakeDetailsModal from '../components/modals/EarthquakeDetailsModal';
-import EarthquakeAlertModal from '../components/modals/EarthquakeAlertModal';
 import { useEarthquakeAlert } from '../context/EarthquakeAlertContext';
 import { useEarthquakeMonitor } from '../hooks/useEarthquakeMonitor';
 import { shouldShowAlert } from '../utils/earthquakeAlert';
 import api from '../../axios.js';
 
 const Settings = () => {
-  const { alertEarthquake, isAlertOpen, closeAlert, checkAndShowAlert, setViewMapHandler } = useEarthquakeAlert();
+  const { setViewMapHandler } = useEarthquakeAlert();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [earthquakes, setEarthquakes] = useState([]);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -86,20 +86,8 @@ const Settings = () => {
     setViewMapHandler(viewMapHandler);
   }, [setViewMapHandler]);
 
-  useEffect(() => {
-    const handleSimulatedAlert = (event) => {
-      const earthquake = event.detail;
-      if (earthquake) {
-        console.log('Received earthquake alert event:', earthquake);
-        checkAndShowAlert(earthquake);
-      }
-    };
-
-    window.addEventListener('earthquakeAlert', handleSimulatedAlert);
-    return () => {
-      window.removeEventListener('earthquakeAlert', handleSimulatedAlert);
-    };
-  }, [checkAndShowAlert]);
+  // Note: EarthquakeAlertModal is now in App.jsx and works globally
+  // Event listeners removed to prevent duplicate alerts
 
   return (
     <div className="flex min-h-screen bg-[#1A1A1A]">
@@ -135,6 +123,7 @@ const Settings = () => {
         </div>
 
         <div className="space-y-6">
+          <LocationSettings />
           <AlertThresholds />
           <NotificationSettings />
         </div>
@@ -148,18 +137,7 @@ const Settings = () => {
           earthquake={selectedEarthquake}
         />
 
-        <EarthquakeAlertModal
-          isOpen={isAlertOpen}
-          onClose={closeAlert}
-          earthquake={alertEarthquake}
-          onViewMap={() => {
-            if (alertEarthquake) {
-              setSelectedEarthquake(alertEarthquake);
-              setIsDetailsModalOpen(true);
-            }
-            closeAlert();
-          }}
-        />
+        {/* Note: EarthquakeAlertModal is now in App.jsx and works globally */}
       </div>
     </div>
   );

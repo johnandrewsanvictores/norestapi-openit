@@ -51,11 +51,9 @@ export const getAlertSettings = () => {
 };
 
 /**
- * @param {string} location 
- * @returns {Array} [longitude, latitude]
+ * @returns {Object} Map of location names to coordinates [longitude, latitude]
  */
-export const getCoordinatesFromLocation = (location) => {
-  
+const getLocationMap = () => {
   const philippinesMap = {
     'Manila, Philippines': [120.9842, 14.5995],
     'Quezon City, Philippines': [121.0437, 14.6760],
@@ -99,7 +97,6 @@ export const getCoordinatesFromLocation = (location) => {
     'Malolos, Philippines': [120.8111, 14.8431]
   };
   
-  
   const usaMap = {
     'San Francisco, CA': [-122.4194, 37.7749],
     'Los Angeles, CA': [-118.2437, 34.0522],
@@ -113,8 +110,23 @@ export const getCoordinatesFromLocation = (location) => {
     'Anaheim, CA': [-117.9143, 33.8353]
   };
   
-  
-  const locationMap = { ...philippinesMap, ...usaMap };
+  return { ...philippinesMap, ...usaMap };
+};
+
+/**
+ * @returns {Array<string>} Array of all available location names
+ */
+export const getAvailableLocations = () => {
+  const locationMap = getLocationMap();
+  return Object.keys(locationMap).sort();
+};
+
+/**
+ * @param {string} location 
+ * @returns {Array} [longitude, latitude]
+ */
+export const getCoordinatesFromLocation = (location) => {
+  const locationMap = getLocationMap();
   
   
   if (locationMap[location]) {

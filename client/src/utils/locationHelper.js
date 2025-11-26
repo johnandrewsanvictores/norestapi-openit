@@ -1,3 +1,16 @@
+// Haversine formula to calculate distance in kilometers
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
 export const getLocationName = (latitude, longitude) => {
   const regions = [
     { name: 'Manila, Philippines', lat: 14.5995, lon: 120.9842 },
@@ -33,10 +46,9 @@ export const getLocationName = (latitude, longitude) => {
   let closestRegion = regions[0];
   let minDistance = Infinity;
 
+  // Use Haversine formula for accurate distance calculation
   regions.forEach(region => {
-    const latDiff = latitude - region.lat;
-    const lonDiff = longitude - region.lon;
-    const distance = Math.sqrt(latDiff * latDiff + lonDiff * lonDiff);
+    const distance = calculateDistance(latitude, longitude, region.lat, region.lon);
     
     if (distance < minDistance) {
       minDistance = distance;
@@ -44,8 +56,8 @@ export const getLocationName = (latitude, longitude) => {
     }
   });
 
-  
-  if (minDistance < 0.45) {
+  // Use 25km threshold for city matching (more accurate)
+  if (minDistance < 25) {
     return closestRegion.name;
   } else {
     if (latitude >= 14.0 && latitude <= 15.0 && longitude >= 120.0 && longitude <= 121.5) {

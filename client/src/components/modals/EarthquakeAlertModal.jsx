@@ -15,11 +15,87 @@ const EarthquakeAlertModal = ({ isOpen, onClose, earthquake, onViewMap }) => {
   const [loadingSafetyGuide, setLoadingSafetyGuide] = useState(false);
   const [isCachedGuide, setIsCachedGuide] = useState(false);
   const alertSoundRef = useRef(null);
+  const fetchedEarthquakeRef = useRef(null);
+
+  // Format time to readable format
+  const formatTime = (timeValue) => {
+    if (!timeValue) return 'Unknown time';
+    
+    let timestamp;
+    if (typeof timeValue === 'number') {
+      timestamp = timeValue;
+    } else if (typeof timeValue === 'string') {
+      // Check if it's a numeric string (Unix timestamp)
+      if (/^\d+$/.test(timeValue)) {
+        timestamp = parseInt(timeValue);
+      } else {
+        timestamp = new Date(timeValue).getTime();
+      }
+    } else {
+      timestamp = new Date(timeValue).getTime();
+    }
+    
+    // Validate timestamp - check if it's a valid number
+    if (isNaN(timestamp) || !isFinite(timestamp)) {
+      return 'Invalid time';
+    }
+    
+    // Format for Philippines timezone
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Manila',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+    
+    const date = new Date(timestamp);
+    
+    // Double-check the date is valid before formatting
+    if (isNaN(date.getTime())) {
+      return 'Invalid time';
+    }
+    
+    const formatted = formatter.format(date);
+    const [datePart, timePart] = formatted.split(', ');
+    const [month, day, year] = datePart.split('/');
+    const [hour, minute, second] = timePart.split(':');
+    
+    return `${day}/${month}/${year}, ${hour}:${minute}:${second}`;
+  };
+
+  // Format magnitude to 1 decimal place
+  const formatMagnitude = (magnitude) => {
+    const mag = parseFloat(magnitude);
+    return isNaN(mag) ? '0.0' : mag.toFixed(1);
+  };
+
+  // Format depth to 1 decimal place
+  const formatDepth = (depth) => {
+    if (!depth) return '12.5 km';
+    if (typeof depth === 'string' && depth.includes('km')) {
+      return depth;
+    }
+    const depthNum = parseFloat(depth);
+    return isNaN(depthNum) ? '12.5 km' : `${depthNum.toFixed(1)} km`;
+  };
 
   useEffect(() => {
     const fetchSafetyGuide = async () => {
       if (!isOpen || !earthquake) {
         setSafetyGuide([]);
+        fetchedEarthquakeRef.current = null;
+        return;
+      }
+
+      // Create a unique key for this earthquake to prevent duplicate fetches
+      const earthquakeKey = `${earthquake.location}-${earthquake.latitude}-${earthquake.longitude}-${earthquake.time || earthquake.timestamp}`;
+      
+      // If we've already fetched for this exact earthquake, don't fetch again
+      if (fetchedEarthquakeRef.current === earthquakeKey) {
         return;
       }
 
@@ -36,6 +112,8 @@ const EarthquakeAlertModal = ({ isOpen, onClose, earthquake, onViewMap }) => {
         setSafetyGuide(cachedGuide);
         setIsCachedGuide(true);
         setLoadingSafetyGuide(false);
+        fetchedEarthquakeRef.current = earthquakeKey; // Mark as fetched
+        return; // Don't fetch if we have cached data
       } else {
         setIsCachedGuide(false);
       }
@@ -58,29 +136,29 @@ const EarthquakeAlertModal = ({ isOpen, onClose, earthquake, onViewMap }) => {
             setIsCachedGuide(false);
             
             saveSafetyGuideToCache(cacheKey, response.data.safety_guide);
-          } else if (!cachedGuide) {
+            fetchedEarthquakeRef.current = earthquakeKey; // Mark as fetched
+          } else {
             setSafetyGuide([]);
+            fetchedEarthquakeRef.current = earthquakeKey; // Mark as fetched even if empty
           }
         } catch (error) {
           console.error('Error fetching safety guide:', error);
-          
-          if (!cachedGuide) {
-            setSafetyGuide([]);
-          }
+          setSafetyGuide([]);
+          fetchedEarthquakeRef.current = earthquakeKey; // Mark as fetched even on error
         } finally {
           setLoadingSafetyGuide(false);
         }
       } else {
-        
-        if (!cachedGuide) {
-          setSafetyGuide([]);
-        }
+        setSafetyGuide([]);
         setLoadingSafetyGuide(false);
+        fetchedEarthquakeRef.current = earthquakeKey; // Mark as fetched
       }
     };
 
     fetchSafetyGuide();
-  }, [isOpen, earthquake]);
+    // Use a stable key based on earthquake properties instead of the whole object
+    // This prevents re-fetching when the object reference changes but data is the same
+  }, [isOpen, earthquake?.location, earthquake?.latitude, earthquake?.longitude, earthquake?.time, earthquake?.timestamp]);
 
   
   useEffect(() => {
@@ -141,6 +219,10 @@ const EarthquakeAlertModal = ({ isOpen, onClose, earthquake, onViewMap }) => {
 
   if (!isOpen || !earthquake) return null;
 
+  const formattedMagnitude = formatMagnitude(earthquake.magnitude);
+  const formattedTime = formatTime(earthquake.time || earthquake.timestamp);
+  const formattedDepth = formatDepth(earthquake.depth);
+
   const handleViewMap = () => {
     if (onViewMap) {
       onViewMap();
@@ -181,7 +263,7 @@ const EarthquakeAlertModal = ({ isOpen, onClose, earthquake, onViewMap }) => {
         <div className="bg-[#2A2A2A] rounded-lg m-4 p-5">
           <div className="flex items-center justify-between mb-4">
             <p className="text-gray-400 text-sm">Magnitude</p>
-            <p className="text-3xl font-bold text-red-500">{earthquake.magnitude}</p>
+            <p className="text-3xl font-bold text-red-500">{formattedMagnitude}</p>
           </div>
 
           <div className="space-y-3 mt-4">
@@ -197,14 +279,14 @@ const EarthquakeAlertModal = ({ isOpen, onClose, earthquake, onViewMap }) => {
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              <span className="text-sm">Depth: {earthquake.depth ? (earthquake.depth.toString().includes('km') ? earthquake.depth : `${earthquake.depth} km`) : '12.5 km'}</span>
+              <span className="text-sm">Depth: {formattedDepth}</span>
             </div>
 
             <div className="flex items-center gap-3 text-gray-300">
               <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-sm">{earthquake.time}</span>
+              <span className="text-sm">{formattedTime}</span>
             </div>
           </div>
         </div>

@@ -4,7 +4,6 @@ import MetricCards from '../section/MetricCards';
 import RecentEarthquakes from '../section/RecentEarthquakes';
 import AlertSettings from '../section/AlertSettings';
 import SeismicActivityChart from '../section/SeismicActivityChart';
-import EarthquakeAlertModal from '../components/modals/EarthquakeAlertModal';
 import EarthquakeDetailsModal from '../components/modals/EarthquakeDetailsModal';
 import NotificationDropdown from '../components/NotificationDropdown';
 import { useEarthquakeAlert } from '../context/EarthquakeAlertContext';
@@ -89,21 +88,8 @@ const Dashboard = () => {
     setViewMapHandler(viewMapHandler);
   }, [viewMapHandler, setViewMapHandler]);
 
-  useEffect(() => {
-    const handleSimulatedAlert = (event) => {
-      const earthquake = event.detail;
-    
-      if (earthquake) {
-        console.log('Received earthquake alert event:', earthquake);
-        checkAndShowAlert(earthquake);
-      }
-    };
-
-    window.addEventListener('earthquakeAlert', handleSimulatedAlert);
-    return () => {
-      window.removeEventListener('earthquakeAlert', handleSimulatedAlert);
-    };
-  }, [checkAndShowAlert]);
+  // Note: EarthquakeAlertModal is now in App.jsx and works globally
+  // Event listeners removed to prevent duplicate alerts
 
   const handleCloseDetailsModal = () => {
     setIsDetailsModalOpen(false);
@@ -153,12 +139,6 @@ const Dashboard = () => {
         <SeismicActivityChart earthquakes={earthquakes} />
       </div>
 
-      <EarthquakeAlertModal
-        isOpen={isAlertOpen}
-        onClose={closeAlert}
-        earthquake={alertEarthquake}
-        onViewMap={handleViewMap}
-      />
 
       <EarthquakeDetailsModal
         isOpen={isDetailsModalOpen}

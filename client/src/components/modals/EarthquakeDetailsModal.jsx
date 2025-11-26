@@ -18,6 +18,74 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
   const [loadingSafetyGuide, setLoadingSafetyGuide] = useState(false);
   const [isCachedGuide, setIsCachedGuide] = useState(false);
 
+  // Format time to readable format
+  const formatTime = (timeValue) => {
+    if (!timeValue) return 'Unknown time';
+    
+    let timestamp;
+    if (typeof timeValue === 'number') {
+      timestamp = timeValue;
+    } else if (typeof timeValue === 'string') {
+      // Check if it's a numeric string (Unix timestamp)
+      if (/^\d+$/.test(timeValue)) {
+        timestamp = parseInt(timeValue);
+      } else {
+        timestamp = new Date(timeValue).getTime();
+      }
+    } else {
+      timestamp = new Date(timeValue).getTime();
+    }
+    
+    // Validate timestamp - check if it's a valid number
+    if (isNaN(timestamp) || !isFinite(timestamp)) {
+      return 'Invalid time';
+    }
+    
+    // Format for Philippines timezone
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Manila',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+    
+    const date = new Date(timestamp);
+    
+    // Double-check the date is valid before formatting
+    if (isNaN(date.getTime())) {
+      return 'Invalid time';
+    }
+    
+    const formatted = formatter.format(date);
+    const [datePart, timePart] = formatted.split(', ');
+    const [month, day, year] = datePart.split('/');
+    const [hour, minute, second] = timePart.split(':');
+    
+    return `${day}/${month}/${year}, ${hour}:${minute}:${second}`;
+  };
+
+  // Get alert level if not provided
+  const getAlertLevel = (magnitude) => {
+    const mag = parseFloat(magnitude) || 0;
+    if (mag >= 6.0) {
+      return { level: 'ALERT', color: 'text-red-500', bgColor: 'bg-red-500/20' };
+    } else if (mag >= 4.5) {
+      return { level: 'WARNING', color: 'text-[#FF7F00]', bgColor: 'bg-[#FF7F00]/20' };
+    } else {
+      return { level: 'LOW', color: 'text-green-500', bgColor: 'bg-green-500/20' };
+    }
+  };
+
+  // Format magnitude to 1 decimal place
+  const formatMagnitude = (magnitude) => {
+    const mag = parseFloat(magnitude);
+    return isNaN(mag) ? '0.0' : mag.toFixed(1);
+  };
+
   const getCoordinates = (earthquake) => {
     if (earthquake.longitude && earthquake.latitude) {
       return [earthquake.longitude, earthquake.latitude];
@@ -43,6 +111,12 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
     return [121.0, 12.0];
   };
 
+  // Create a stable earthquake ID to prevent unnecessary re-renders
+  const earthquakeId = earthquake 
+    ? `${earthquake.location}-${earthquake.magnitude}-${earthquake.timestamp || earthquake.time}`
+    : null;
+  const lastEarthquakeIdRef = useRef(null);
+
   useEffect(() => {
     if (!isOpen || !earthquake) {
       if (mapRef.current) {
@@ -50,8 +124,34 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
         mapRef.current = null;
       }
       setMapLoaded(false);
+      lastEarthquakeIdRef.current = null;
       return;
     }
+
+    // Only reinitialize map if the earthquake actually changed (by ID, not object reference)
+    if (lastEarthquakeIdRef.current === earthquakeId && mapRef.current) {
+      // Same earthquake, just update the map center if coordinates changed
+      const coordinates = getCoordinates(earthquake);
+      if (mapRef.current && mapRef.current.getCenter) {
+        const currentCenter = mapRef.current.getCenter();
+        const distance = Math.sqrt(
+          Math.pow(currentCenter.lng - coordinates[0], 2) + 
+          Math.pow(currentCenter.lat - coordinates[1], 2)
+        );
+        // Only update if coordinates changed significantly (more than 0.001 degrees)
+        if (distance > 0.001) {
+          mapRef.current.flyTo({
+            center: coordinates,
+            zoom: 10,
+            duration: 1000
+          });
+        }
+      }
+      return;
+    }
+
+    // New earthquake or map doesn't exist - initialize map
+    lastEarthquakeIdRef.current = earthquakeId;
 
     const mapToken = import.meta.env.VITE_MAP_TOKEN || 'pk.eyJ1IjoiamRyZXd3IiwiYSI6ImNtaHB3eWpnYTBjc3EycnF6ZWY4NmJqOHkifQ.tomWXBmHn5UgNicCIlRukQ';
     mapboxgl.accessToken = mapToken;
@@ -325,12 +425,56 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
           }
         });
 
+        // Format time and magnitude for popup
+        const formatTimeForPopup = (timeValue) => {
+          if (!timeValue) return 'Unknown time';
+          let timestamp;
+          if (typeof timeValue === 'number') {
+            timestamp = timeValue;
+          } else if (typeof timeValue === 'string' && /^\d+$/.test(timeValue)) {
+            timestamp = parseInt(timeValue);
+          } else {
+            timestamp = new Date(timeValue).getTime();
+          }
+          
+          // Validate timestamp - check if it's a valid number
+          if (isNaN(timestamp) || !isFinite(timestamp)) {
+            return 'Invalid time';
+          }
+          
+          const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'Asia/Manila',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+          });
+          const date = new Date(timestamp);
+          
+          // Double-check the date is valid before formatting
+          if (isNaN(date.getTime())) {
+            return 'Invalid time';
+          }
+          
+          const formatted = formatter.format(date);
+          const [datePart, timePart] = formatted.split(', ');
+          const [month, day, year] = datePart.split('/');
+          const [hour, minute, second] = timePart.split(':');
+          return `${day}/${month}/${year}, ${hour}:${minute}:${second}`;
+        };
+        
+        const popupMagnitude = parseFloat(earthquake.magnitude).toFixed(1);
+        const popupTime = formatTimeForPopup(earthquake.time || earthquake.timestamp);
+
         const popup = new mapboxgl.Popup({ offset: 25 })
           .setHTML(`
             <div class="text-white">
-              <h3 class="font-bold text-lg mb-1">Magnitude ${earthquake.magnitude}</h3>
+              <h3 class="font-bold text-lg mb-1">Magnitude ${popupMagnitude}</h3>
               <p class="text-sm text-gray-300">${earthquake.location}</p>
-              <p class="text-xs text-gray-400 mt-1">${earthquake.time}</p>
+              <p class="text-xs text-gray-400 mt-1">${popupTime}</p>
             </div>
           `);
 
@@ -376,8 +520,9 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
         mapRef.current = null;
       }
       setMapLoaded(false);
+      lastEarthquakeIdRef.current = null;
     };
-  }, [isOpen, earthquake]);
+  }, [isOpen, earthquakeId, earthquake]);
 
   useEffect(() => {
     const fetchSafetyGuide = async () => {
@@ -447,6 +592,18 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
 
   if (!isOpen || !earthquake) return null;
 
+  // Ensure alert level properties are set
+  const alertInfo = earthquake.alertLevel 
+    ? { 
+        level: earthquake.alertLevel, 
+        color: earthquake.alertColor || '', 
+        bgColor: earthquake.bgColor || '' 
+      }
+    : getAlertLevel(earthquake.magnitude);
+  
+  const formattedMagnitude = formatMagnitude(earthquake.magnitude);
+  const formattedTime = formatTime(earthquake.time || earthquake.timestamp);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
       <div className="bg-[#2A2A2A] rounded-lg w-full max-w-4xl mx-4 relative max-h-[90vh] overflow-hidden flex flex-col">
@@ -461,13 +618,13 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-white mb-2">
-                Magnitude {earthquake.magnitude} Earthquake
+                Magnitude {formattedMagnitude} Earthquake
               </h2>
               <p className="text-gray-400">{earthquake.location}</p>
-              <p className="text-sm text-gray-500 mt-1">{earthquake.time}</p>
+              <p className="text-sm text-gray-500 mt-1">{formattedTime}</p>
             </div>
-            <div className={`px-4 py-2 rounded-lg font-bold text-sm uppercase ${earthquake.alertColor} ${earthquake.bgColor}`}>
-              {earthquake.alertLevel}
+            <div className={`px-4 py-2 rounded-lg font-bold text-sm uppercase ${alertInfo.color} ${alertInfo.bgColor}`}>
+              {alertInfo.level}
             </div>
           </div>
         </div>
@@ -489,15 +646,15 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-6">
             <div>
               <p className="text-gray-400">Magnitude</p>
-              <p className="text-white font-semibold text-lg">{earthquake.magnitude}</p>
+              <p className="text-white font-semibold text-lg">{formattedMagnitude}</p>
             </div>
             <div>
               <p className="text-gray-400">Alert Level</p>
-              <p className={`font-semibold ${earthquake.alertColor}`}>{earthquake.alertLevel}</p>
+              <p className={`font-semibold ${alertInfo.color}`}>{alertInfo.level}</p>
             </div>
             <div>
               <p className="text-gray-400">Time</p>
-              <p className="text-white font-semibold">{earthquake.time}</p>
+              <p className="text-white font-semibold">{formattedTime}</p>
             </div>
           </div>
 
