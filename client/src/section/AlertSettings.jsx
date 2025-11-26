@@ -9,7 +9,6 @@ const AlertSettings = () => {
   const [locations, setLocations] = useState([]);
   const [notificationMethods, setNotificationMethods] = useState({
     browserPush: true,
-    email: false,
     sms: false,
   });
 
@@ -29,6 +28,14 @@ const AlertSettings = () => {
           setLocation(parsed.location);
         } else {
           setLocation('Default');
+        }
+        
+        // Load notification methods from settings
+        if (parsed.notificationMethods) {
+          setNotificationMethods({
+            browserPush: parsed.notificationMethods.browserPush !== undefined ? parsed.notificationMethods.browserPush : true,
+            sms: parsed.notificationMethods.sms !== undefined ? parsed.notificationMethods.sms : false,
+          });
         }
       } else {
         setLocation('Default');
@@ -71,7 +78,8 @@ const AlertSettings = () => {
     const settings = {
       minMagnitude: magnitude,
       alertRadius: radius,
-      location: location
+      location: location,
+      notificationMethods: notificationMethods
     };
     
     try {
@@ -173,7 +181,6 @@ const AlertSettings = () => {
           <div className="space-y-2 sm:space-y-3">
             {[
               { key: "browserPush", label: "Browser Push" },
-              { key: "email", label: "Email" },
               { key: "sms", label: "SMS" },
             ].map((method) => (
               <label

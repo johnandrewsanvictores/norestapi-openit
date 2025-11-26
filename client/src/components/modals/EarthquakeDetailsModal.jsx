@@ -8,6 +8,8 @@ import {
   generateSafetyGuideKey,
   isOnline 
 } from '../../utils/cacheHelper';
+import { getUserLocation, getAlertSettings, calculateDistance, getCoordinatesFromLocation } from '../../utils/earthquakeAlert';
+import EvacuationMapModal from './EvacuationMapModal';
 
 const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
   const mapContainerRef = useRef(null);
@@ -17,29 +19,63 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
   const [safetyGuide, setSafetyGuide] = useState([]);
   const [loadingSafetyGuide, setLoadingSafetyGuide] = useState(false);
   const [isCachedGuide, setIsCachedGuide] = useState(false);
+  const [isEvacuationMapOpen, setIsEvacuationMapOpen] = useState(false);
+  const [isUserInRange, setIsUserInRange] = useState(false);
 
   // Format time to readable format
   const formatTime = (timeValue) => {
     if (!timeValue) return 'Unknown time';
     
     let timestamp;
+    
+    try {
     if (typeof timeValue === 'number') {
+        // Check if timestamp is in seconds (less than year 2000 in milliseconds)
+        // Unix timestamps before 2000-01-01 in seconds would be < 946684800000
+        // If the number is less than 10000000000, it's likely in seconds
+        if (timeValue < 10000000000) {
+          timestamp = timeValue * 1000; // Convert seconds to milliseconds
+        } else {
       timestamp = timeValue;
+        }
     } else if (typeof timeValue === 'string') {
       // Check if it's a numeric string (Unix timestamp)
       if (/^\d+$/.test(timeValue)) {
-        timestamp = parseInt(timeValue);
+          const numValue = parseInt(timeValue);
+          // Check if it's in seconds (less than 13 digits)
+          if (timeValue.length < 13) {
+            timestamp = numValue * 1000; // Convert seconds to milliseconds
+          } else {
+            timestamp = numValue;
+          }
+        } else {
+          // Try to parse as ISO date string
+          const parsed = new Date(timeValue);
+          timestamp = parsed.getTime();
+        }
+      } else if (timeValue instanceof Date) {
+        timestamp = timeValue.getTime();
       } else {
-        timestamp = new Date(timeValue).getTime();
-      }
-    } else {
-      timestamp = new Date(timeValue).getTime();
+        // Try to convert to Date and then to timestamp
+        const parsed = new Date(timeValue);
+        timestamp = parsed.getTime();
     }
     
     // Validate timestamp - check if it's a valid number
     if (isNaN(timestamp) || !isFinite(timestamp)) {
+        console.warn('Invalid timestamp value:', timeValue);
       return 'Invalid time';
     }
+      
+      // Check if timestamp is reasonable (not too far in past or future)
+      const now = Date.now();
+      const minTimestamp = new Date('1900-01-01').getTime();
+      const maxTimestamp = now + (10 * 365 * 24 * 60 * 60 * 1000); // 10 years in future
+      
+      if (timestamp < minTimestamp || timestamp > maxTimestamp) {
+        console.warn('Timestamp out of reasonable range:', timestamp, timeValue);
+        // Still try to format it, but log the warning
+      }
     
     // Format for Philippines timezone
     const formatter = new Intl.DateTimeFormat('en-US', {
@@ -57,15 +93,36 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
     
     // Double-check the date is valid before formatting
     if (isNaN(date.getTime())) {
+        console.warn('Invalid date from timestamp:', timestamp, timeValue);
       return 'Invalid time';
     }
     
     const formatted = formatter.format(date);
     const [datePart, timePart] = formatted.split(', ');
+      
+      if (!datePart || !timePart) {
+        console.warn('Unexpected date format:', formatted);
+        // Fallback to simple date formatting
+        return date.toLocaleString('en-US', { 
+          timeZone: 'Asia/Manila',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        });
+      }
+      
     const [month, day, year] = datePart.split('/');
     const [hour, minute, second] = timePart.split(':');
     
     return `${day}/${month}/${year}, ${hour}:${minute}:${second}`;
+    } catch (error) {
+      console.error('Error formatting time:', error, timeValue);
+      return 'Invalid time';
+    }
   };
 
   // Get alert level if not provided
@@ -428,11 +485,24 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
         // Format time and magnitude for popup
         const formatTimeForPopup = (timeValue) => {
           if (!timeValue) return 'Unknown time';
+          
           let timestamp;
+          try {
           if (typeof timeValue === 'number') {
+              // Check if timestamp is in seconds (less than 13 digits)
+              if (timeValue < 10000000000) {
+                timestamp = timeValue * 1000; // Convert seconds to milliseconds
+              } else {
             timestamp = timeValue;
+              }
           } else if (typeof timeValue === 'string' && /^\d+$/.test(timeValue)) {
-            timestamp = parseInt(timeValue);
+              const numValue = parseInt(timeValue);
+              // Check if it's in seconds (less than 13 digits)
+              if (timeValue.length < 13) {
+                timestamp = numValue * 1000; // Convert seconds to milliseconds
+              } else {
+                timestamp = numValue;
+              }
           } else {
             timestamp = new Date(timeValue).getTime();
           }
@@ -461,9 +531,28 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
           
           const formatted = formatter.format(date);
           const [datePart, timePart] = formatted.split(', ');
+            
+            if (!datePart || !timePart) {
+              // Fallback formatting
+              return date.toLocaleString('en-US', { 
+                timeZone: 'Asia/Manila',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+              });
+            }
+            
           const [month, day, year] = datePart.split('/');
           const [hour, minute, second] = timePart.split(':');
           return `${day}/${month}/${year}, ${hour}:${minute}:${second}`;
+          } catch (error) {
+            console.error('Error formatting time for popup:', error, timeValue);
+            return 'Invalid time';
+          }
         };
         
         const popupMagnitude = parseFloat(earthquake.magnitude).toFixed(1);
@@ -590,6 +679,50 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
     fetchSafetyGuide();
   }, [isOpen, earthquake]);
 
+  // Check if user is in earthquake range
+  useEffect(() => {
+    if (!isOpen || !earthquake) {
+      setIsUserInRange(false);
+      return;
+    }
+
+    const userLocation = getUserLocation();
+    const alertSettings = getAlertSettings();
+
+    if (!userLocation || !userLocation.latitude || !userLocation.longitude) {
+      setIsUserInRange(false);
+      return;
+    }
+
+    // Get earthquake coordinates
+    let earthquakeLat, earthquakeLon;
+    if (earthquake.latitude && earthquake.longitude) {
+      earthquakeLat = parseFloat(earthquake.latitude);
+      earthquakeLon = parseFloat(earthquake.longitude);
+    } else {
+      const coords = getCoordinates(earthquake);
+      earthquakeLon = coords[0];
+      earthquakeLat = coords[1];
+    }
+
+    // Get user location coordinates
+    let userLat, userLon;
+    if (alertSettings.location && alertSettings.location !== 'Default') {
+      const alertCoords = getCoordinatesFromLocation(alertSettings.location);
+      userLon = alertCoords[0];
+      userLat = alertCoords[1];
+    } else {
+      userLat = userLocation.latitude;
+      userLon = userLocation.longitude;
+    }
+
+    // Calculate distance
+    const distance = calculateDistance(userLat, userLon, earthquakeLat, earthquakeLon);
+    const alertRadius = parseFloat(alertSettings.alertRadius || 100);
+
+    setIsUserInRange(distance <= alertRadius);
+  }, [isOpen, earthquake]);
+
   if (!isOpen || !earthquake) return null;
 
   // Ensure alert level properties are set
@@ -699,9 +832,29 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
               </ul>
             )}
           </div>
+
+          {isUserInRange && (
+            <div className="mt-4">
+              <button
+                onClick={() => setIsEvacuationMapOpen(true)}
+                className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 18.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V5.618a1 1 0 00-.553-.894L15 2m0 15V2m0 15l-6-3" />
+                </svg>
+                Evacuation Map
+              </button>
+            </div>
+          )}
         </div>
         </div>
       </div>
+
+      <EvacuationMapModal
+        isOpen={isEvacuationMapOpen}
+        onClose={() => setIsEvacuationMapOpen(false)}
+        earthquake={earthquake}
+      />
     </div>
   );
 };

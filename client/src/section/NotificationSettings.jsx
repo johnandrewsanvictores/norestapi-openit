@@ -1,16 +1,53 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { showSuccess, showError } from '../utils/alertHelper.js';
 
 const NotificationSettings = () => {
   const [pushNotifications, setPushNotifications] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(false);
   const [smsNotifications, setSmsNotifications] = useState(false);
 
+  useEffect(() => {
+    // Load notification settings from localStorage
+    try {
+      const alertSettings = localStorage.getItem('alertSettings');
+      if (alertSettings) {
+        const parsed = JSON.parse(alertSettings);
+        if (parsed.notificationMethods) {
+          setPushNotifications(parsed.notificationMethods.browserPush !== undefined ? parsed.notificationMethods.browserPush : true);
+          setSmsNotifications(parsed.notificationMethods.sms !== undefined ? parsed.notificationMethods.sms : false);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading notification settings:', error);
+    }
+  }, []);
+
   const handleSave = () => {
-    console.log("Notification settings saved:", {
-      pushNotifications,
-      emailNotifications,
-      smsNotifications,
-    });
+    try {
+      // Get existing alert settings
+      const existingSettings = localStorage.getItem('alertSettings');
+      const settings = existingSettings ? JSON.parse(existingSettings) : {};
+      
+      // Update notification methods
+      settings.notificationMethods = {
+        browserPush: pushNotifications,
+        sms: smsNotifications,
+      };
+      
+      // Save to localStorage
+      localStorage.setItem('alertSettings', JSON.stringify(settings));
+      
+      // Dispatch event to notify other components
+      window.dispatchEvent(new Event('alertSettingsUpdated'));
+      
+      showSuccess('Notification settings saved successfully!');
+      console.log("Notification settings saved:", {
+        pushNotifications,
+        smsNotifications,
+      });
+    } catch (error) {
+      console.error('Error saving notification settings:', error);
+      showError('Error saving settings. Please try again.');
+    }
   };
 
   return (
@@ -29,18 +66,6 @@ const NotificationSettings = () => {
           />
           <span className="text-sm sm:text-base text-white">
             Push Notifications
-          </span>
-        </label>
-
-        <label className="flex items-center space-x-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={emailNotifications}
-            onChange={(e) => setEmailNotifications(e.target.checked)}
-            className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-600 bg-[#1A1A1A] text-[#FF7F00] focus:ring-[#FF7F00] focus:ring-offset-0"
-          />
-          <span className="text-sm sm:text-base text-white">
-            Email Notifications
           </span>
         </label>
 

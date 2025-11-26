@@ -131,56 +131,60 @@ export const EarthquakeAlertProvider = ({ children }) => {
       }
     }
     
-    saveAlertToCache(earthquake);
+    // Check notification preferences before showing browser push alert
+    const alertSettings = JSON.parse(localStorage.getItem('alertSettings') || '{}');
+    const notificationMethods = alertSettings.notificationMethods || { browserPush: true, sms: false };
     
-    
-    setAlertEarthquake(earthquake);
-    setIsAlertOpen(true);
+    // Show browser push notification (alert modal) only if enabled
+    if (notificationMethods.browserPush !== false) {
+      saveAlertToCache(earthquake);
+      setAlertEarthquake(earthquake);
+      setIsAlertOpen(true);
+    }
 
     
-    try {
-      
-      const alertSettings = JSON.parse(localStorage.getItem('alertSettings') || '{}');
-      const userLocation = JSON.parse(localStorage.getItem('userLocation') || 'null');
-      
-      
-      let userAlertLat = null;
-      let userAlertLon = null;
-      
-      if (alertSettings.location && alertSettings.location !== 'Default') {
-        const coords = getCoordinatesFromLocation(alertSettings.location);
-        userAlertLat = coords[1];
-        userAlertLon = coords[0];
-      } else if (userLocation && userLocation.latitude && userLocation.longitude) {
-        userAlertLat = userLocation.latitude;
-        userAlertLon = userLocation.longitude;
-      }
-
-      const earthquakeData = {
-        latitude: earthquake.latitude,
-        longitude: earthquake.longitude,
-        magnitude: earthquake.magnitude,
-        location: earthquake.location,
-        depth: earthquake.depth,
-        time: earthquake.timestamp || earthquake.time,
+    // Send SMS only if enabled in notification preferences
+    if (notificationMethods.sms === true) {
+      try {
+        const userLocation = JSON.parse(localStorage.getItem('userLocation') || 'null');
         
-        currentUserSettings: (userAlertLat && userAlertLon) ? {
-          latitude: userAlertLat,
-          longitude: userAlertLon,
-          minimum_magnitude: parseFloat(alertSettings.minMagnitude || 3.0),
-          alert_radius: parseFloat(alertSettings.alertRadius || 100),
-          enable_sms_alerts: true 
-        } : null
-      };
+        let userAlertLat = null;
+        let userAlertLon = null;
+        
+        if (alertSettings.location && alertSettings.location !== 'Default') {
+          const coords = getCoordinatesFromLocation(alertSettings.location);
+          userAlertLat = coords[1];
+          userAlertLon = coords[0];
+        } else if (userLocation && userLocation.latitude && userLocation.longitude) {
+          userAlertLat = userLocation.latitude;
+          userAlertLon = userLocation.longitude;
+        }
 
-      await api.post('/earthquake/notify-users', earthquakeData, {
-        withCredentials: true
-      });
+        const earthquakeData = {
+          latitude: earthquake.latitude,
+          longitude: earthquake.longitude,
+          magnitude: earthquake.magnitude,
+          location: earthquake.location,
+          depth: earthquake.depth,
+          time: earthquake.timestamp || earthquake.time,
+          
+          currentUserSettings: (userAlertLat && userAlertLon) ? {
+            latitude: userAlertLat,
+            longitude: userAlertLon,
+            minimum_magnitude: parseFloat(alertSettings.minMagnitude || 3.0),
+            alert_radius: parseFloat(alertSettings.alertRadius || 100),
+            enable_sms_alerts: true 
+          } : null
+        };
 
-      console.log('SMS notifications sent to users in range');
-    } catch (error) {
-      console.error('Error sending SMS notifications:', error);
-      
+        await api.post('/earthquake/notify-users', earthquakeData, {
+          withCredentials: true
+        });
+
+        console.log('SMS notifications sent to users in range');
+      } catch (error) {
+        console.error('Error sending SMS notifications:', error);
+      }
     }
 
     return true; // Return true to indicate alert was shown successfully
