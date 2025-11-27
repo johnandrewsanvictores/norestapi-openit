@@ -5,6 +5,8 @@ import authRoutes from './routes/auth.js';
 import earthquakeRoutes from './routes/earthquake_data.js';
 import simulatedEarthquakeRoutes from './routes/simulated_earthquake.js';
 import alertThresholdRoutes from './routes/alert_threshold.js';
+import geocodingRoutes from './routes/geocoding.js';
+import evacuationCenterRoutes from './routes/evacuation_center.js';
 import connectDbB from "./config/db.js";
 import session from 'express-session';
 import dotenv from 'dotenv';
@@ -43,6 +45,8 @@ app.use("/auth", authRoutes);
 app.use("/earthquake", earthquakeRoutes);
 app.use("/simulated-earthquake", simulatedEarthquakeRoutes);
 app.use("/alert-threshold", alertThresholdRoutes);
+app.use("/geocoding", geocodingRoutes);
+app.use("/evacuation-center", evacuationCenterRoutes);
 
 app.use(session({
     secret: process.env.SESSION_SECRET || 'default-secret-change-in-production',

@@ -1,4 +1,6 @@
-// Haversine formula to calculate distance in kilometers
+import api from '../../axios.js';
+
+// Haversine formula to calculate distance in kilometers (kept as fallback)
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371; // Earth's radius in kilometers
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -11,7 +13,138 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c;
 };
 
-export const getLocationName = (latitude, longitude) => {
+/**
+ * Validates if a geolocation position is from GPS (not IP-based)
+ * IP-based locations typically have accuracy > 1000m, while GPS should be < 100m
+ * @param {GeolocationPosition} position - The geolocation position object
+ * @returns {Object} - { isValid: boolean, isGPS: boolean, accuracy: number, message: string }
+ */
+export const validateGPSLocation = (position) => {
+  if (!position || !position.coords) {
+    return {
+      isValid: false,
+      isGPS: false,
+      accuracy: Infinity,
+      message: 'Invalid position data'
+    };
+  }
+
+  const accuracy = position.coords.accuracy; // in meters
+  const hasAltitude = position.coords.altitude !== null && position.coords.altitude !== undefined;
+  const hasAltitudeAccuracy = position.coords.altitudeAccuracy !== null && position.coords.altitudeAccuracy !== undefined;
+  const hasHeading = position.coords.heading !== null && position.coords.heading !== undefined;
+  const hasSpeed = position.coords.speed !== null && position.coords.speed !== undefined;
+
+  // GPS typically provides:
+  // - Accuracy < 100m (usually 10-50m)
+  // - Altitude information
+  // - Heading and speed (when moving)
+  
+  // IP-based geolocation typically provides:
+  // - Accuracy > 1000m (often 5000m+)
+  // - No altitude, heading, or speed
+
+  // Accept all locations, but classify them based on accuracy
+  const MAX_GPS_ACCURACY = 500; // meters - locations with better accuracy are considered GPS
+  const isGPS = accuracy < MAX_GPS_ACCURACY;
+  const isHighAccuracy = accuracy < 100;
+  
+  // Always return valid, but provide information about accuracy
+  if (isHighAccuracy) {
+    return {
+      isValid: true,
+      isGPS: true,
+      accuracy: accuracy,
+      isHighAccuracy: true,
+      message: `GPS location acquired (accuracy: ${Math.round(accuracy)}m)`
+    };
+  } else if (isGPS) {
+    return {
+      isValid: true,
+      isGPS: true,
+      accuracy: accuracy,
+      isHighAccuracy: false,
+      message: `Location acquired with moderate accuracy (${Math.round(accuracy)}m). For better accuracy, ensure GPS is enabled.`
+    };
+  } else {
+    // IP-based or low accuracy location - accept it but inform user
+    const accuracyKm = (accuracy / 1000).toFixed(1);
+    return {
+      isValid: true,
+      isGPS: false,
+      accuracy: accuracy,
+      isHighAccuracy: false,
+      message: `Location acquired (accuracy: ${accuracyKm} km). This appears to be IP-based location. For more accurate earthquake alerts, enable GPS or use manual location selection in Settings.`
+    };
+  }
+};
+
+/**
+ * Gets GPS location with validation
+ * @param {Object} options - Geolocation options
+ * @returns {Promise<GeolocationPosition>}
+ */
+export const getGPSLocation = (options = {}) => {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Geolocation is not supported by your browser'));
+      return;
+    }
+
+    const defaultOptions = {
+      enableHighAccuracy: true, // Force GPS, not IP-based
+      timeout: 20000, // Increased timeout to give GPS more time
+      maximumAge: 0 // Always get fresh location
+    };
+
+    const geolocationOptions = { ...defaultOptions, ...options };
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const validation = validateGPSLocation(position);
+        
+        if (!validation.isValid) {
+          reject(new Error(validation.message));
+          return;
+        }
+
+        // Log accuracy for debugging
+        if (validation.isGPS) {
+          console.log(`Location acquired: accuracy ${Math.round(validation.accuracy)}m (GPS)`);
+        } else {
+          const accuracyKm = (validation.accuracy / 1000).toFixed(1);
+          console.log(`Location acquired: accuracy ${accuracyKm} km (IP-based)`);
+        }
+        
+        resolve(position);
+      },
+      (error) => {
+        let errorMessage = 'Unable to get GPS location. ';
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage += 'Location permission denied. Please enable location access in your browser settings.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage += 'Location information is unavailable. Please ensure GPS is enabled on your device.';
+            break;
+          case error.TIMEOUT:
+            errorMessage += 'Location request timed out. Please try again and ensure GPS is enabled.';
+            break;
+          default:
+            errorMessage += 'An unknown error occurred.';
+            break;
+        }
+        
+        reject(new Error(errorMessage));
+      },
+      geolocationOptions
+    );
+  });
+};
+
+// Fallback function using hardcoded regions (used when API fails)
+const getLocationNameFallback = (latitude, longitude) => {
   const regions = [
     { name: 'Manila, Philippines', lat: 14.5995, lon: 120.9842 },
     { name: 'Quezon City, Philippines', lat: 14.6760, lon: 121.0437 },
@@ -76,7 +209,32 @@ export const getLocationName = (latitude, longitude) => {
   }
 };
 
+// Main function using OpenCage API for accurate reverse geocoding
+export const getLocationName = async (latitude, longitude) => {
+  try {
+    // Call the backend API endpoint for reverse geocoding
+    const response = await api.get('/geocoding/reverse-geocode', {
+      params: {
+        latitude,
+        longitude
+      }
+    });
 
+    if (response.data && response.data.success && response.data.locationName) {
+      return response.data.locationName;
+    } else {
+      // Fallback to hardcoded regions if API returns no result
+      console.warn('OpenCage API returned no location, using fallback');
+      return getLocationNameFallback(latitude, longitude);
+    }
+  } catch (error) {
+    // Fallback to hardcoded regions if API call fails
+    console.error('Error calling reverse geocoding API:', error);
+    return getLocationNameFallback(latitude, longitude);
+  }
+};
+
+// Synchronous version for backward compatibility (uses cached location name)
 export const getUserLocationName = () => {
   try {
     const locationData = localStorage.getItem('userLocation');
@@ -87,13 +245,9 @@ export const getUserLocationName = () => {
         return location.locationName;
       }
       
+      // If location name is not cached, return coordinates as fallback
       if (location.latitude && location.longitude) {
-        const calculatedName = getLocationName(location.latitude, location.longitude);
-        
-        location.locationName = calculatedName;
-        localStorage.setItem('userLocation', JSON.stringify(location));
-        
-        return calculatedName;
+        return `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`;
       }
     }
   } catch (error) {
@@ -101,4 +255,3 @@ export const getUserLocationName = () => {
   }
   return 'Location not set';
 };
-

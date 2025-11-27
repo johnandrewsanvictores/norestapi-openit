@@ -3,15 +3,18 @@ import DashboardSidebar from '../section/DashboardSidebar';
 import AlertThresholds from '../section/AlertThresholds';
 import NotificationSettings from '../section/NotificationSettings';
 import LocationSettings from '../section/LocationSettings';
+import EvacuationCentersAdmin from '../section/EvacuationCentersAdmin';
 import NotificationDropdown from '../components/NotificationDropdown';
 import EarthquakeDetailsModal from '../components/modals/EarthquakeDetailsModal';
 import { useEarthquakeAlert } from '../context/EarthquakeAlertContext';
 import { useEarthquakeMonitor } from '../hooks/useEarthquakeMonitor';
+import { useAuth } from '../context/AuthContext';
 import { shouldShowAlert } from '../utils/earthquakeAlert';
 import api from '../../axios.js';
 
 const Settings = () => {
   const { setViewMapHandler } = useEarthquakeAlert();
+  const { user } = useAuth();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [earthquakes, setEarthquakes] = useState([]);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -126,6 +129,9 @@ const Settings = () => {
           <LocationSettings />
           <AlertThresholds />
           <NotificationSettings />
+          {user && user.role === 'admin' && (
+            <EvacuationCentersAdmin />
+          )}
         </div>
 
         <EarthquakeDetailsModal

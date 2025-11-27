@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useEarthquakeAlert } from '../context/EarthquakeAlertContext';
+import { useAuth } from '../context/AuthContext';
 import { shouldShowAlert } from '../utils/earthquakeAlert';
 
 const loadProcessedEarthquakes = () => {
@@ -76,9 +78,32 @@ const normalizeMagnitude = (magValue) => {
 
 export const useEarthquakeMonitor = (earthquakes = []) => {
   const { checkAndShowAlert, isAlertOpen, isEarthquakeAlerted, alertClosedTimeRef } = useEarthquakeAlert();
+  const { user } = useAuth();
+  const location = useLocation();
   const processedEarthquakesRef = useRef(loadProcessedEarthquakes());
   const initializedRef = useRef(false);
   const [settingsVersion, setSettingsVersion] = useState(0);
+  
+  // Sync with context's alerted earthquakes on mount to prevent duplicate alerts after refresh
+  useEffect(() => {
+    // Load processed earthquakes and sync with context
+    const processed = loadProcessedEarthquakes();
+    processedEarthquakesRef.current = processed;
+    
+    // Also check if context has any alerted earthquakes and sync them
+    if (isEarthquakeAlerted) {
+      // The context's alertedEarthquakesRef is already initialized from localStorage
+      // We just need to ensure our ref is in sync
+      processed.forEach(id => {
+        processedEarthquakesRef.current.add(id);
+      });
+    }
+  }, [isEarthquakeAlerted]);
+
+  // Only monitor earthquakes if user is authenticated and on dashboard routes
+  const isAuthenticated = !!user;
+  const isDashboardRoute = location.pathname.startsWith('/dashboard');
+  const shouldMonitor = isAuthenticated && isDashboardRoute;
 
   useEffect(() => {
     const handleSettingsUpdate = () => {
@@ -96,6 +121,11 @@ export const useEarthquakeMonitor = (earthquakes = []) => {
   }, []);
 
   useEffect(() => {
+    // Don't monitor if user is not authenticated or not on dashboard route
+    if (!shouldMonitor) {
+      return;
+    }
+
     if (isAlertOpen) {
       return;
     }
@@ -206,7 +236,7 @@ export const useEarthquakeMonitor = (earthquakes = []) => {
         }
       }
     });
-  }, [earthquakes, checkAndShowAlert, isAlertOpen, settingsVersion, isEarthquakeAlerted]);
+  }, [earthquakes, checkAndShowAlert, isAlertOpen, settingsVersion, isEarthquakeAlerted, shouldMonitor]);
 
   
   useEffect(() => {

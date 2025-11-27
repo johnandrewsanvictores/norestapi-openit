@@ -47,8 +47,15 @@ export const generateAlertSound = () => {
         try {
           oscillator1.stop();
           oscillator2.stop();
-          audioContext.close();
-        } catch (e) {}
+          // Check if AudioContext is not already closed before closing
+          if (audioContext.state !== 'closed') {
+            audioContext.close().catch(() => {
+              // Ignore errors when closing
+            });
+          }
+        } catch (e) {
+          // Ignore errors
+        }
       },
     };
   } catch (error) {

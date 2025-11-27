@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getGPSLocation, validateGPSLocation } from '../../utils/locationHelper';
 
 const LocationPermissionModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -10,23 +11,25 @@ const LocationPermissionModal = ({ isOpen, onClose }) => {
     setIsRequesting(true);
     setError('');
 
-    if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser');
-      setIsRequesting(false);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
+    getGPSLocation({
+      timeout: 20000, // Give GPS more time to acquire signal
+      enableHighAccuracy: true,
+      maximumAge: 0
+    })
+      .then(async (position) => {
+        const validation = validateGPSLocation(position);
+        
         const locationData = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          accuracy: position.coords.accuracy,
+          isGPS: true
         };
         
         try {
           const { getLocationName } = await import('../../utils/locationHelper.js');
-          const locationName = getLocationName(locationData.latitude, locationData.longitude);
+          const locationName = await getLocationName(locationData.latitude, locationData.longitude);
           locationData.locationName = locationName;
         } catch (error) {
           console.error('Error getting location name:', error);
@@ -41,21 +44,27 @@ const LocationPermissionModal = ({ isOpen, onClose }) => {
         setIsRequesting(false);
         onClose();
         navigate('/dashboard');
-      },
-      (error) => {
+      })
+      .catch((error) => {
         setIsRequesting(false);
-        if (error.code === error.PERMISSION_DENIED) {
-          setError('Location permission is required to use this service. Please enable location access in your browser settings.');
-        } else {
-          setError('Unable to retrieve your location. Please try again.');
+        let errorMsg = error.message || 'Unable to retrieve GPS location. Please ensure GPS is enabled and try again.';
+        
+        // Shorten the error message for low accuracy errors
+        if (errorMsg.includes('accuracy is too low') || errorMsg.includes('IP-based location')) {
+          const accuracyMatch = errorMsg.match(/\(([\d.]+)\s*(km|m)\)/);
+          const accuracy = accuracyMatch ? accuracyMatch[1] : 'low';
+          errorMsg = `GPS location unavailable (accuracy: ${accuracy} km). This appears to be IP-based location. You can set your location manually in Settings.`;
         }
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0
-      }
-    );
+        
+        setError(errorMsg);
+      });
+  };
+
+  const handleSkip = () => {
+    // Allow user to proceed without GPS location
+    localStorage.setItem('locationPermission', 'skipped');
+    onClose();
+    navigate('/dashboard');
   };
 
 
@@ -102,12 +111,15 @@ const LocationPermissionModal = ({ isOpen, onClose }) => {
 
           {error && (
             <div className="bg-red-900/30 border border-red-500 rounded-lg p-3 text-red-300 text-sm mb-4">
-              {error}
+              <p className="mb-2">{error}</p>
+              <p className="text-xs text-red-200 mt-2">
+                You can still proceed to the dashboard and set your location manually in Settings.
+              </p>
             </div>
           )}
         </div>
 
-        <div>
+        <div className="space-y-3">
           <button
             onClick={handleRequestLocation}
             disabled={isRequesting}
@@ -115,10 +127,19 @@ const LocationPermissionModal = ({ isOpen, onClose }) => {
           >
             {isRequesting ? 'Requesting Location...' : 'Enable Location Access'}
           </button>
+          
+          {error && (
+            <button
+              onClick={handleSkip}
+              className="w-full bg-gray-600 text-white py-3 rounded-lg text-lg font-semibold hover:bg-gray-700 transition-colors"
+            >
+              Continue to Dashboard
+            </button>
+          )}
         </div>
 
         <p className="text-gray-500 text-xs text-center mt-4">
-          Location access is required to continue to the dashboard
+          {error ? 'You can set your location manually in Settings after signing in.' : 'Location access is recommended for accurate earthquake alerts'}
         </p>
       </div>
     </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../../axios.js";
 import { useAuth } from "../../context/AuthContext.jsx";
+import { getGPSLocation, validateGPSLocation } from "../../utils/locationHelper";
 
 const SignInModal = ({ isOpen, onClose, onSwitchToSignUp, onLocationPermissionRequest }) => {
   const navigate = useNavigate();
@@ -56,7 +57,8 @@ const SignInModal = ({ isOpen, onClose, onSwitchToSignUp, onLocationPermissionRe
       const locationData = localStorage.getItem('userLocation');
       if (locationData) {
         const location = JSON.parse(locationData);
-        if (location.latitude && location.longitude) {
+        // Only consider it valid if it has coordinates AND is GPS-based (not IP-based)
+        if (location.latitude && location.longitude && location.isGPS) {
           return true;
         }
       }
@@ -88,52 +90,49 @@ const SignInModal = ({ isOpen, onClose, onSwitchToSignUp, onLocationPermissionRe
       const hasLocation = checkLocation();
       
       if (!hasLocation) {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            async (position) => {
-              const locationData = {
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-                timestamp: new Date().toISOString()
-              };
-              
-              try {
-                const { getLocationName } = await import('../../utils/locationHelper.js');
-                const locationName = getLocationName(locationData.latitude, locationData.longitude);
-                locationData.locationName = locationName;
-              } catch (error) {
-                console.error('Error getting location name:', error);
-                locationData.locationName = `${locationData.latitude.toFixed(4)}, ${locationData.longitude.toFixed(4)}`;
-              }
-              
-              localStorage.setItem('locationPermission', 'granted');
-              localStorage.setItem('userLocation', JSON.stringify(locationData));
-              window.dispatchEvent(new Event('locationUpdated'));
-              
-              navigate("/dashboard");
-            },
-            (error) => {
-              if (onLocationPermissionRequest) {
-                onLocationPermissionRequest();
-              } else {
-                console.warn('Location permission not available:', error);
-                navigate("/dashboard");
-              }
-            },
-            {
-              enableHighAccuracy: true,
-              timeout: 15000,
-              maximumAge: 0
+        // Try to get GPS location with validation
+        getGPSLocation({
+          timeout: 20000, // Give GPS more time to acquire signal
+          enableHighAccuracy: true,
+          maximumAge: 0
+        })
+          .then(async (position) => {
+            const validation = validateGPSLocation(position);
+            
+            const locationData = {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              timestamp: new Date().toISOString(),
+              accuracy: position.coords.accuracy,
+              isGPS: true
+            };
+            
+            try {
+              const { getLocationName } = await import('../../utils/locationHelper.js');
+              const locationName = await getLocationName(locationData.latitude, locationData.longitude);
+              locationData.locationName = locationName;
+            } catch (error) {
+              console.error('Error getting location name:', error);
+              locationData.locationName = `${locationData.latitude.toFixed(4)}, ${locationData.longitude.toFixed(4)}`;
             }
-          );
-        } else {
-          if (onLocationPermissionRequest) {
-            onLocationPermissionRequest();
-          } else {
+            
+            localStorage.setItem('locationPermission', 'granted');
+            localStorage.setItem('userLocation', JSON.stringify(locationData));
+            window.dispatchEvent(new Event('locationUpdated'));
+            
             navigate("/dashboard");
-          }
-        }
+          })
+          .catch((error) => {
+            // If GPS fails, show location permission modal
+            if (onLocationPermissionRequest) {
+              onLocationPermissionRequest();
+            } else {
+              console.warn('GPS location not available:', error.message);
+              navigate("/dashboard");
+            }
+          });
       } else {
+        // Location already exists, navigate to dashboard
         navigate("/dashboard");
       }
     } catch (error) {

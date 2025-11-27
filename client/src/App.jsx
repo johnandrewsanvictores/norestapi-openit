@@ -1,7 +1,8 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
 import { useEarthquakeAlert } from "./context/EarthquakeAlertContext";
 import { useEarthquakeMonitor } from "./hooks/useEarthquakeMonitor";
+import { useAuth } from "./context/AuthContext";
 import EarthquakeAlertModal from "./components/modals/EarthquakeAlertModal";
 import api from "../axios.js";
 
@@ -15,7 +16,14 @@ import Simulation from "./pages/Simulation.jsx";
 
 function App() {
   const { alertEarthquake, isAlertOpen, closeAlert, handleViewMap } = useEarthquakeAlert();
+  const { user } = useAuth();
+  const location = useLocation();
   const [earthquakes, setEarthquakes] = useState([]);
+
+  // Only show alerts if user is authenticated and on dashboard routes
+  const isAuthenticated = !!user;
+  const isDashboardRoute = location.pathname.startsWith('/dashboard');
+  const shouldShowAlertModal = isAuthenticated && isDashboardRoute && isAlertOpen;
 
   // Global earthquake monitoring - works on all pages
   useEffect(() => {
@@ -122,13 +130,15 @@ function App() {
         <Route path="/dashboard/simulation" element={<Simulation />} />
       </Routes>
       
-      {/* Global Earthquake Alert Modal - works on all pages */}
-      <EarthquakeAlertModal
-        isOpen={isAlertOpen}
-        onClose={closeAlert}
-        earthquake={memoizedEarthquake}
-        onViewMap={handleViewMap}
-      />
+      {/* Global Earthquake Alert Modal - only shows for authenticated users on dashboard routes */}
+      {shouldShowAlertModal && (
+        <EarthquakeAlertModal
+          isOpen={isAlertOpen}
+          onClose={closeAlert}
+          earthquake={memoizedEarthquake}
+          onViewMap={handleViewMap}
+        />
+      )}
     </>
   );
 }

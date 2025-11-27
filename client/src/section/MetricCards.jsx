@@ -7,19 +7,33 @@ const MetricCards = ({ earthquakes = [] }) => {
   const sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000);
 
   const getQuakeTimestamp = (quake) => {
+    let timestamp = null;
+    
+    // Get the timestamp value
     if (typeof quake.timestamp === 'number') {
-      return quake.timestamp;
-    }
-    if (typeof quake.time === 'number') {
-      return quake.time;
-    }
-    if (quake.time || quake.timestamp) {
+      timestamp = quake.timestamp;
+    } else if (typeof quake.time === 'number') {
+      timestamp = quake.time;
+    } else if (quake.time || quake.timestamp) {
+      // Try to parse as date string
       const parsed = new Date(quake.time || quake.timestamp).getTime();
       if (!isNaN(parsed)) {
-        return parsed;
+        timestamp = parsed;
       }
     }
-    return 0;
+    
+    if (timestamp === null || timestamp === 0) {
+      return 0;
+    }
+    
+    // Normalize: if timestamp is in seconds (less than 10 billion), convert to milliseconds
+    // Unix timestamps in seconds are typically < 10^10 (10 billion)
+    // Unix timestamps in milliseconds are typically >= 10^12 (1 trillion)
+    if (timestamp < 10000000000) {
+      return timestamp * 1000; // Convert seconds to milliseconds
+    }
+    
+    return timestamp;
   };
 
   const lastHour = earthquakes.filter(q => {

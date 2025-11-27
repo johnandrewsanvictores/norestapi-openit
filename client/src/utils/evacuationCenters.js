@@ -78,7 +78,7 @@ export const evacuationCenters = [
  * @param {number} lon2 
  * @returns {number} Distance in kilometers
  */
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
+export const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371; // Earth's radius in kilometers
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;

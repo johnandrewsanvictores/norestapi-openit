@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { shouldShowAlert, getCoordinatesFromLocation } from '../utils/earthquakeAlert';
 import { saveAlertToCache } from '../utils/cacheHelper';
+import { useAuth } from './AuthContext';
 import api from '../../axios';
 
 const EarthquakeAlertContext = createContext();
@@ -14,15 +16,43 @@ export const useEarthquakeAlert = () => {
 };
 
 export const EarthquakeAlertProvider = ({ children }) => {
+  const { user } = useAuth();
+  const location = useLocation();
   const [alertEarthquake, setAlertEarthquake] = useState(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const viewMapCallbackRef = useRef(null);
+  
+  // Load processed earthquakes from localStorage on initialization to prevent duplicate alerts after refresh
+  const loadProcessedEarthquakesForRef = () => {
+    try {
+      const stored = localStorage.getItem('processedEarthquakes');
+      if (stored) {
+        const data = JSON.parse(stored);
+        const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+        const filtered = data.filter(item => item.timestamp >= sevenDaysAgo);
+        return new Set(filtered.map(item => item.id));
+      }
+    } catch (error) {
+      console.error('Error loading processed earthquakes for ref:', error);
+    }
+    return new Set();
+  };
+  
   // Track which earthquakes have been shown as alerts to prevent duplicates
-  const alertedEarthquakesRef = useRef(new Set());
+  // Initialize from localStorage to persist across page refreshes
+  const alertedEarthquakesRef = useRef(loadProcessedEarthquakesForRef());
   // Track when alert was closed to prevent immediate re-triggering
   const alertClosedTimeRef = useRef(0);
 
   const checkAndShowAlert = useCallback(async (earthquake) => {
+    // Only show alerts if user is authenticated and on dashboard routes
+    const isAuthenticated = !!user;
+    const isDashboardRoute = location.pathname.startsWith('/dashboard');
+    
+    if (!isAuthenticated || !isDashboardRoute) {
+      console.log('Skipping alert: user not authenticated or not on dashboard route');
+      return false;
+    }
     // Normalize timestamp to ensure consistent ID generation
     const normalizeTimestamp = (timeValue) => {
       if (!timeValue) return null;
@@ -188,7 +218,7 @@ export const EarthquakeAlertProvider = ({ children }) => {
     }
 
     return true; // Return true to indicate alert was shown successfully
-  }, []);
+  }, [user, location.pathname]);
 
   const closeAlert = useCallback(() => {
     setIsAlertOpen(false);

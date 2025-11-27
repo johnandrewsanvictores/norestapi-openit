@@ -1,12 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { findNearestEvacuationCenter } from '../../utils/evacuationCenters';
+import { calculateDistance } from '../../utils/evacuationCenters';
 import { getUserLocation } from '../../utils/earthquakeAlert';
+import { getGPSLocation, validateGPSLocation } from '../../utils/locationHelper';
+import api from '../../../axios';
 
 const EvacuationMapModal = ({ isOpen, onClose, earthquake }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
+  const timeoutIdRef = useRef(null);
+  const mapInitializedRef = useRef(false);
+  const lastEarthquakeIdRef = useRef(null);
+  const lastCentersHashRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [evacuationCenter, setEvacuationCenter] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
@@ -15,6 +21,54 @@ const EvacuationMapModal = ({ isOpen, onClose, earthquake }) => {
   const [loadingRoute, setLoadingRoute] = useState(false);
   const [error, setError] = useState(null);
   const [showDirections, setShowDirections] = useState(true);
+  const [locationWarning, setLocationWarning] = useState(null);
+  const [evacuationCenters, setEvacuationCenters] = useState([]);
+  const [loadingCenters, setLoadingCenters] = useState(false);
+
+  // Fetch evacuation centers from API
+  useEffect(() => {
+    const fetchEvacuationCenters = async () => {
+      setLoadingCenters(true);
+      try {
+        const response = await api.get('/evacuation-center', {
+          withCredentials: true
+        });
+        if (response.data.success) {
+          // Filter only active centers and map to expected format
+          const centers = response.data.data
+            .filter(center => center.isActive)
+            .map(center => ({
+              name: center.name,
+              latitude: center.latitude,
+              longitude: center.longitude,
+              city: center.city || '',
+              address: center.address || ''
+            }));
+          setEvacuationCenters(centers);
+        }
+      } catch (error) {
+        console.error('Error fetching evacuation centers:', error);
+        // Fallback to empty array, will show error if no centers
+        setEvacuationCenters([]);
+      } finally {
+        setLoadingCenters(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchEvacuationCenters();
+    }
+  }, [isOpen]);
+
+  // Create a stable earthquake ID
+  const earthquakeId = earthquake 
+    ? `${earthquake.location}-${earthquake.magnitude}-${earthquake.timestamp || earthquake.time}`
+    : null;
+  
+  // Create a hash of evacuation centers to detect changes
+  const centersHash = evacuationCenters.length > 0
+    ? evacuationCenters.map(c => `${c.latitude},${c.longitude}`).join('|')
+    : null;
 
   useEffect(() => {
     if (!isOpen || !earthquake) {
@@ -22,65 +76,104 @@ const EvacuationMapModal = ({ isOpen, onClose, earthquake }) => {
         mapRef.current.remove();
         mapRef.current = null;
       }
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
+      }
+      mapInitializedRef.current = false;
+      lastEarthquakeIdRef.current = null;
+      lastCentersHashRef.current = null;
       setMapLoaded(false);
       setEvacuationCenter(null);
       setUserLocation(null);
       setRouteData(null);
       setDirections([]);
       setError(null);
+      setLocationWarning(null);
       return;
     }
 
-    // Try to get real-time GPS location first, then fall back to stored location
+    // Don't proceed if centers are still loading
+    if (loadingCenters) {
+      return;
+    }
+
+    // Check if we've already initialized the map for this earthquake and centers combination
+    if (mapInitializedRef.current && 
+        lastEarthquakeIdRef.current === earthquakeId && 
+        lastCentersHashRef.current === centersHash &&
+        mapRef.current) {
+      // Map already initialized for this earthquake/centers, don't reinitialize
+      return;
+    }
+
+    // Get current location - prioritize manually set location, then try GPS, then fall back to stored
     const getCurrentLocation = () => {
       return new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-          // Fall back to stored location
-          const storedLocation = getUserLocation();
-          if (storedLocation && storedLocation.latitude && storedLocation.longitude) {
-            resolve(storedLocation);
-          } else {
-            reject(new Error('Geolocation not supported and no stored location'));
-          }
+        // First, check if there's a manually set location
+        const storedLocation = getUserLocation();
+        
+        if (storedLocation && storedLocation.manualLocation && storedLocation.latitude && storedLocation.longitude) {
+          // Use manually set location directly
+          console.log('Using manually set location:', storedLocation.manualLocation);
+          setLocationWarning(`Using manually set location: ${storedLocation.manualLocation || storedLocation.locationName || 'Map-selected location'}.`);
+          resolve(storedLocation);
           return;
         }
-
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
+        
+        // If no manual location, try to get real-time GPS location
+        getGPSLocation({
+          timeout: 20000, // Give GPS more time to acquire signal
+          enableHighAccuracy: true,
+          maximumAge: 0
+        })
+          .then(async (position) => {
+            const validation = validateGPSLocation(position);
+            
             const locationData = {
               latitude: position.coords.latitude,
               longitude: position.coords.longitude,
               timestamp: new Date().toISOString(),
-              accuracy: position.coords.accuracy
+              accuracy: position.coords.accuracy,
+              isGPS: true
             };
             
             // Try to get location name
             try {
               const { getLocationName } = await import('../../utils/locationHelper.js');
-              locationData.locationName = getLocationName(locationData.latitude, locationData.longitude);
+              locationData.locationName = await getLocationName(locationData.latitude, locationData.longitude);
             } catch (error) {
               console.error('Error getting location name:', error);
               locationData.locationName = `Current Location (${locationData.latitude.toFixed(4)}, ${locationData.longitude.toFixed(4)})`;
             }
             
+            console.log(validation.message);
             resolve(locationData);
-          },
-          (error) => {
-            // Fall back to stored location if GPS fails
-            const storedLocation = getUserLocation();
+          })
+          .catch((error) => {
+            // Fall back to stored location (GPS or IP-based, but not manual since we already checked)
             if (storedLocation && storedLocation.latitude && storedLocation.longitude) {
-              console.warn('GPS unavailable, using stored location:', error);
-              resolve(storedLocation);
+              // Check if it's GPS-based
+              if (storedLocation.isGPS) {
+                console.warn('GPS unavailable, using stored GPS location:', error.message);
+                resolve(storedLocation);
+              } else {
+                // It's an IP-based location - use it but show warning
+                console.warn('GPS unavailable, using stored location (may not be GPS):', error.message);
+                const accuracy = storedLocation.accuracy || Infinity;
+                const accuracyKm = (accuracy / 1000).toFixed(1);
+                
+                if (accuracy > 1000) {
+                  setLocationWarning(`Location accuracy is low (${accuracyKm} km). This appears to be IP-based. For accurate evacuation routes, please enable GPS or set your location manually on the map in Settings.`);
+                } else {
+                  setLocationWarning('Using stored location. For more accurate evacuation routes, enable GPS or set your location manually on the map in Settings.');
+                }
+                resolve(storedLocation);
+              }
             } else {
-              reject(new Error('Unable to get location'));
+              reject(new Error(error.message || 'Unable to get location. Please set your location in Settings (GPS or click on the map to set manually).'));
             }
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0 // Always get fresh location
-          }
-        );
+          });
       });
     };
 
@@ -94,24 +187,51 @@ const EvacuationMapModal = ({ isOpen, onClose, earthquake }) => {
 
         setUserLocation(location);
 
-        // Find nearest evacuation center from current location
-        const nearest = findNearestEvacuationCenter(location.latitude, location.longitude);
+        // Find nearest evacuation center from current location using API centers
+        if (evacuationCenters.length === 0) {
+          setError('No evacuation centers available. Please contact administrator.');
+          return;
+        }
+
+        let nearest = null;
+        let minDistance = Infinity;
+        
+        evacuationCenters.forEach(center => {
+          const distance = calculateDistance(location.latitude, location.longitude, center.latitude, center.longitude);
+          if (distance < minDistance) {
+            minDistance = distance;
+            nearest = { ...center, distance };
+          }
+        });
+
         if (!nearest) {
           setError('No evacuation center found nearby.');
           return;
         }
 
+        // Find all nearby evacuation centers within 50km radius
+        const nearbyCenters = evacuationCenters
+          .map(center => ({
+            ...center,
+            distance: calculateDistance(location.latitude, location.longitude, center.latitude, center.longitude)
+          }))
+          .filter(center => center.distance <= 50)
+          .sort((a, b) => a.distance - b.distance);
+
         setEvacuationCenter(nearest);
-        initializeMap(location, nearest);
+        initializeMap(location, nearest, nearbyCenters);
       })
       .catch((error) => {
         console.error('Error getting location:', error);
-        setError('Unable to get your current location. Please enable GPS in settings.');
+        setError(error.message || 'Unable to get your current location. Please set your location in Settings (GPS or manual selection).');
       });
 
     // Separate function to initialize map after location is obtained
-    let timeoutIdRef = null;
-    const initializeMap = (location, nearest) => {
+    const initializeMap = (location, nearest, nearbyCenters = []) => {
+      // Mark as initialized to prevent re-initialization
+      mapInitializedRef.current = true;
+      lastEarthquakeIdRef.current = earthquakeId;
+      lastCentersHashRef.current = centersHash;
       // Initialize map
       const mapToken = import.meta.env.VITE_MAP_TOKEN || 'pk.eyJ1IjoiamRyZXd3IiwiYSI6ImNtaHB3eWpnYTBjc3EycnF6ZWY4NmJqOHkifQ.tomWXBmHn5UgNicCIlRukQ';
       mapboxgl.accessToken = mapToken;
@@ -126,18 +246,25 @@ const EvacuationMapModal = ({ isOpen, onClose, earthquake }) => {
         mapContainerRef.current.id = mapId;
       }
 
-      timeoutIdRef = setTimeout(() => {
+      // Clear any existing timeout
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+      }
+      
+      timeoutIdRef.current = setTimeout(() => {
         if (!mapContainerRef.current || mapRef.current) return;
 
-      // Calculate center point between user and evacuation center
-      const centerLat = (location.latitude + nearest.latitude) / 2;
-      const centerLon = (location.longitude + nearest.longitude) / 2;
+      // Calculate center point considering all nearby centers
+      const allLats = [location.latitude, ...nearbyCenters.map(c => c.latitude)];
+      const allLons = [location.longitude, ...nearbyCenters.map(c => c.longitude)];
+      const centerLat = allLats.reduce((a, b) => a + b) / allLats.length;
+      const centerLon = allLons.reduce((a, b) => a + b) / allLons.length;
 
       mapRef.current = new mapboxgl.Map({
         container: mapId,
         style: 'mapbox://styles/mapbox/dark-v11',
         center: [centerLon, centerLat],
-        zoom: 12,
+        zoom: 11, // Slightly zoomed out to show more centers
         attributionControl: false
       });
 
@@ -167,23 +294,28 @@ const EvacuationMapModal = ({ isOpen, onClose, earthquake }) => {
           }
         });
 
-        // Add evacuation center marker
-        mapRef.current.addSource('evacuation-center', {
+        // Add all nearby evacuation centers (including nearest)
+        // Compare by coordinates to reliably identify nearest center
+        const allCentersFeatures = nearbyCenters.map(center => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [center.longitude, center.latitude]
+          },
+          properties: {
+            title: center.name,
+            distance: center.distance,
+            isNearest: Math.abs(center.latitude - nearest.latitude) < 0.0001 && 
+                      Math.abs(center.longitude - nearest.longitude) < 0.0001,
+            city: center.city || ''
+          }
+        }));
+
+        mapRef.current.addSource('evacuation-centers', {
           type: 'geojson',
           data: {
             type: 'FeatureCollection',
-            features: [
-              {
-                type: 'Feature',
-                geometry: {
-                  type: 'Point',
-                  coordinates: [nearest.longitude, nearest.latitude]
-                },
-                properties: {
-                  title: nearest.name
-                }
-              }
-            ]
+            features: allCentersFeatures
           }
         });
 
@@ -200,15 +332,31 @@ const EvacuationMapModal = ({ isOpen, onClose, earthquake }) => {
           }
         });
 
+        // Add all evacuation center markers (smaller, gray for non-nearest)
         mapRef.current.addLayer({
-          id: 'evacuation-center-marker',
+          id: 'evacuation-centers-markers',
           type: 'circle',
-          source: 'evacuation-center',
+          source: 'evacuation-centers',
           paint: {
-            'circle-radius': 12,
-            'circle-color': '#10b981',
+            'circle-radius': [
+              'case',
+              ['get', 'isNearest'],
+              14, // Larger for nearest
+              10  // Smaller for others
+            ],
+            'circle-color': [
+              'case',
+              ['get', 'isNearest'],
+              '#10b981', // Green for nearest
+              '#6b7280'  // Gray for others
+            ],
             'circle-stroke-color': '#ffffff',
-            'circle-stroke-width': 2
+            'circle-stroke-width': [
+              'case',
+              ['get', 'isNearest'],
+              3,  // Thicker border for nearest
+              2   // Normal border for others
+            ]
           }
         });
 
@@ -221,20 +369,22 @@ const EvacuationMapModal = ({ isOpen, onClose, earthquake }) => {
             </div>
           `);
 
-        const centerPopup = new mapboxgl.Popup({ offset: 25 })
-          .setHTML(`
-            <div class="text-white">
-              <h3 class="font-bold text-sm mb-1">${nearest.name}</h3>
-              <p class="text-xs text-gray-300">Evacuation Center</p>
-              <p class="text-xs text-gray-400 mt-1">Distance: ${nearest.distance.toFixed(2)} km</p>
-            </div>
-          `);
-
         mapRef.current.on('click', 'user-location-marker', (e) => {
           userPopup.setLngLat(e.lngLat).addTo(mapRef.current);
         });
 
-        mapRef.current.on('click', 'evacuation-center-marker', (e) => {
+        mapRef.current.on('click', 'evacuation-centers-markers', (e) => {
+          const props = e.features[0].properties;
+          const isNearest = props.isNearest;
+          const centerPopup = new mapboxgl.Popup({ offset: 25 })
+            .setHTML(`
+              <div class="text-white">
+                <h3 class="font-bold text-sm mb-1">${props.title}</h3>
+                <p class="text-xs text-gray-300">Evacuation Center${props.city ? ` - ${props.city}` : ''}</p>
+                <p class="text-xs text-gray-400 mt-1">Distance: ${props.distance.toFixed(2)} km</p>
+                ${isNearest ? '<p class="text-xs text-green-400 mt-1 font-semibold">★ Nearest Center (Route Shown)</p>' : ''}
+              </div>
+            `);
           centerPopup.setLngLat(e.lngLat).addTo(mapRef.current);
         });
 
@@ -246,11 +396,11 @@ const EvacuationMapModal = ({ isOpen, onClose, earthquake }) => {
           mapRef.current.getCanvas().style.cursor = '';
         });
 
-        mapRef.current.on('mouseenter', 'evacuation-center-marker', () => {
+        mapRef.current.on('mouseenter', 'evacuation-centers-markers', () => {
           mapRef.current.getCanvas().style.cursor = 'pointer';
         });
 
-        mapRef.current.on('mouseleave', 'evacuation-center-marker', () => {
+        mapRef.current.on('mouseleave', 'evacuation-centers-markers', () => {
           mapRef.current.getCanvas().style.cursor = '';
         });
 
@@ -267,8 +417,9 @@ const EvacuationMapModal = ({ isOpen, onClose, earthquake }) => {
 
     // Cleanup function for useEffect
     return () => {
-      if (timeoutIdRef) {
-        clearTimeout(timeoutIdRef);
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
       }
       if (mapRef.current) {
         try {
@@ -284,11 +435,11 @@ const EvacuationMapModal = ({ isOpen, onClose, earthquake }) => {
           if (mapRef.current.getSource('user-location')) {
             mapRef.current.removeSource('user-location');
           }
-          if (mapRef.current.getLayer('evacuation-center-marker')) {
-            mapRef.current.removeLayer('evacuation-center-marker');
+          if (mapRef.current.getLayer('evacuation-centers-markers')) {
+            mapRef.current.removeLayer('evacuation-centers-markers');
           }
-          if (mapRef.current.getSource('evacuation-center')) {
-            mapRef.current.removeSource('evacuation-center');
+          if (mapRef.current.getSource('evacuation-centers')) {
+            mapRef.current.removeSource('evacuation-centers');
           }
         } catch (e) {
           console.error('Error cleaning up map:', e);
@@ -298,7 +449,7 @@ const EvacuationMapModal = ({ isOpen, onClose, earthquake }) => {
       }
       setMapLoaded(false);
     };
-  }, [isOpen, earthquake]);
+  }, [isOpen, earthquakeId, centersHash, loadingCenters]);
 
   const fetchRoute = async (userLoc, center) => {
     if (!mapRef.current) return;
@@ -387,7 +538,7 @@ const EvacuationMapModal = ({ isOpen, onClose, earthquake }) => {
           });
         }
 
-        // Fit map to route bounds
+        // Fit map to route bounds and all nearby centers
         const coordinates = route.geometry.coordinates;
         const bounds = new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]);
         
@@ -396,9 +547,12 @@ const EvacuationMapModal = ({ isOpen, onClose, earthquake }) => {
           bounds.extend(coord);
         });
 
-        // Add padding for markers
+        // Add padding for markers - include user location and nearest center
         bounds.extend([userLoc.longitude, userLoc.latitude]);
         bounds.extend([center.longitude, center.latitude]);
+        
+        // Also extend to include all nearby centers (they're already on the map)
+        // This ensures the map shows all evacuation centers
 
         mapRef.current.fitBounds(bounds, {
           padding: { top: 50, bottom: 50, left: 50, right: 50 },
@@ -514,6 +668,12 @@ const EvacuationMapModal = ({ isOpen, onClose, earthquake }) => {
         {error && (
           <div className="mx-6 mt-4 p-4 bg-red-900/30 border border-red-800/50 rounded-lg">
             <p className="text-red-300 text-sm">{error}</p>
+          </div>
+        )}
+
+        {locationWarning && (
+          <div className="mx-6 mt-2">
+            <p className="text-gray-400 text-xs">{locationWarning}</p>
           </div>
         )}
 

@@ -26,6 +26,16 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
   const formatTime = (timeValue) => {
     if (!timeValue) return 'Unknown time';
     
+    // If it's already a formatted string (like "1 day ago" or "27/11/2025, 09:45:25"), return it as-is
+    if (typeof timeValue === 'string') {
+      const lowerValue = timeValue.toLowerCase();
+      if (lowerValue.includes('ago') || timeValue.includes('/') || lowerValue.includes('day') || 
+          lowerValue.includes('minute') || lowerValue.includes('hour') || lowerValue.includes('second') ||
+          lowerValue.includes('year') || lowerValue.includes('month') || lowerValue.includes('week')) {
+        return timeValue;
+      }
+    }
+    
     let timestamp;
     
     try {
@@ -273,7 +283,7 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
-        const context = canvas.getContext('2d');
+        const context = canvas.getContext('2d', { willReadFrequently: true });
 
         
         const pulsingDot = {
@@ -556,7 +566,9 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
         };
         
         const popupMagnitude = parseFloat(earthquake.magnitude).toFixed(1);
-        const popupTime = formatTimeForPopup(earthquake.time || earthquake.timestamp);
+        // Use timestamp if available (raw timestamp), otherwise try to parse time
+        const popupTimeValue = earthquake.timestamp || (typeof earthquake.time === 'number' || /^\d+$/.test(earthquake.time) ? earthquake.time : null);
+        const popupTime = popupTimeValue ? formatTimeForPopup(popupTimeValue) : (earthquake.time || 'Unknown time');
 
         const popup = new mapboxgl.Popup({ offset: 25 })
           .setHTML(`
@@ -611,7 +623,7 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
       setMapLoaded(false);
       lastEarthquakeIdRef.current = null;
     };
-  }, [isOpen, earthquakeId, earthquake]);
+  }, [isOpen, earthquakeId]);
 
   useEffect(() => {
     const fetchSafetyGuide = async () => {
@@ -735,7 +747,25 @@ const EarthquakeDetailsModal = ({ isOpen, onClose, earthquake }) => {
     : getAlertLevel(earthquake.magnitude);
   
   const formattedMagnitude = formatMagnitude(earthquake.magnitude);
-  const formattedTime = formatTime(earthquake.time || earthquake.timestamp);
+  // Use timestamp if available (raw timestamp), otherwise try to parse time
+  // If time is already a formatted string (like "1 day ago"), use timestamp instead
+  // Check if time is already formatted (contains 'ago', 'day', 'minute', 'hour', or date format with '/')
+  const isTimeFormatted = typeof earthquake.time === 'string' && 
+    (earthquake.time.includes('ago') || earthquake.time.includes('day') || 
+     earthquake.time.includes('minute') || earthquake.time.includes('hour') || 
+     earthquake.time.includes('/'));
+  
+  // Prioritize timestamp, then raw time number, then formatted time string
+  let formattedTime;
+  if (earthquake.timestamp) {
+    formattedTime = formatTime(earthquake.timestamp);
+  } else if (isTimeFormatted) {
+    formattedTime = earthquake.time; // Already formatted, use as-is
+  } else if (typeof earthquake.time === 'number' || /^\d+$/.test(String(earthquake.time))) {
+    formattedTime = formatTime(earthquake.time);
+  } else {
+    formattedTime = formatTime(earthquake.time || earthquake.timestamp || null);
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
