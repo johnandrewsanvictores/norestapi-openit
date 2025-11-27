@@ -3,36 +3,108 @@
 @tailwind utilities;
 
 @layer base {
-    body {
-    }
+  body {
+  }
 }
 
 html {
-    scroll-behavior: smooth;
+  scroll-behavior: smooth;
 }
 
 /* Custom slider styles */
 input[type="range"].slider {
-    -webkit-appearance: none;
-    appearance: none;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 input[type="range"].slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #FF7F00;
-    cursor: pointer;
-    border: 2px solid #1A1A1A;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ff7f00;
+  cursor: pointer;
+  border: 2px solid #1a1a1a;
 }
 
 input[type="range"].slider::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #FF7F00;
-    cursor: pointer;
-    border: 2px solid #1A1A1A;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ff7f00;
+  cursor: pointer;
+  border: 2px solid #1a1a1a;
+}
+
+/* Pulsing Location Marker Animations */
+@keyframes pulse-expand {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(255, 127, 0, 0.6);
+  }
+  50% {
+    transform: scale(1.15);
+    box-shadow: 0 0 35px rgba(255, 127, 0, 0.9);
+  }
+}
+
+.pulse-container {
+  position: relative;
+  width: 24px;
+  height: 24px;
+}
+
+.pulse-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border: 2px solid #ff7f00;
+  border-radius: 50%;
+  animation: pulse-expand 3s ease-out infinite;
+  pointer-events: none;
+}
+
+.pulse-ring-1 {
+  width: 100px;
+  height: 100px;
+  animation-delay: 0s;
+}
+
+.pulse-ring-2 {
+  width: 160px;
+  height: 160px;
+  animation-delay: 1s;
+}
+
+.pulse-ring-3 {
+  width: 220px;
+  height: 220px;
+  animation-delay: 2s;
+}
+
+.pulse-center-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 24px;
+  height: 24px;
+  background: #ff7f00;
+  border-radius: 50%;
+  box-shadow: 0 0 20px rgba(255, 127, 0, 0.6);
+  animation: pulse-dot 2s ease-in-out infinite;
+  z-index: 10;
 }
